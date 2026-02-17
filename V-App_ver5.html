@@ -1,0 +1,2937 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Closet Outfit Picker</title>
+  <style>
+    :root{
+      font-family:-apple-system,system-ui,Segoe UI,Roboto,Arial;
+
+      /* THEME (user-changeable) */
+      --accent:#111111;
+      --accent-contrast:#ffffff;
+      --bg:#f6f6f7;
+      --card:#ffffff;
+
+      /* tokens */
+      --border:#e7e7ea;
+      --muted:#666;
+      --pill:#efeff2;
+      --pill2:#e8f0fe;
+      --warn-bg:#fff7e6;
+      --warn-border:#ffe2a8;
+      --warn-text:#7a4b00;
+      --ok-bg:#e8f5e9;
+      --ok-border:#b8e0bd;
+      --ok-text:#1b5e20;
+    }
+
+    body{ margin:0; background:var(--bg); color:#111; }
+    header{
+      padding:12px 14px;
+      background:var(--card);
+      position:sticky; top:0;
+      border-bottom:1px solid var(--border);
+      z-index:10;
+      display:flex; gap:12px; align-items:center; justify-content:space-between;
+    }
+    .brand{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+    h1{ margin:0; font-size:16px; line-height:1.2; }
+    .muted{ color:var(--muted); font-size:12px; }
+    main{ padding:16px; max-width:1100px; margin:0 auto; }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:12px;
+    }
+    .card h2{ font-size:14px; margin:0 0 8px; }
+
+    label{ display:block; font-size:12px; color:#444; margin-top:8px; }
+    input,select,textarea{
+      width:100%;
+      padding:10px;
+      border-radius:10px;
+      border:1px solid #d9d9de;
+      background:#fff;
+      box-sizing:border-box;
+    }
+    textarea{ min-height:68px; resize:vertical; }
+
+    .row{ display:flex; gap:10px; }
+    .row>*{ flex:1; }
+    .row.tight{ gap:8px; }
+
+    button{
+      appearance:none; border:0; border-radius:10px; padding:10px 12px;
+      background:var(--accent); color:var(--accent-contrast); font-weight:700; cursor:pointer;
+    }
+    button.secondary{ background:#eaeaec; color:#111; }
+    button.danger{ background:#c62828; color:#fff; }
+    button.small{ padding:6px 10px; border-radius:9px; font-size:12px; }
+    button.ghost{ background:transparent; border:1px solid var(--border); color:#111; }
+
+    .footer{ margin-top:14px; display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+
+    .pill{ display:inline-block; padding:2px 8px; border-radius:999px; background:var(--pill); font-size:12px; margin-right:6px; margin-top:6px; }
+    .kpi{ display:flex; gap:8px; flex-wrap:wrap; }
+    .kpi .pill{ background:var(--pill2); }
+
+    .list{ display:flex; flex-direction:column; gap:8px; }
+    .item{
+      border:1px solid var(--border); border-radius:10px; padding:10px; background:#fff;
+      display:flex; justify-content:space-between; gap:10px; align-items:flex-start;
+    }
+    .item b{ font-size:13px; }
+    .item small{ display:block; color:var(--muted); margin-top:2px; }
+
+    .thumb{
+      width:56px; height:56px; border-radius:10px; border:1px solid var(--border);
+      object-fit:cover; background:#f2f2f5; flex:0 0 auto;
+    }
+    .thumbLg{
+      width:82px; height:82px; border-radius:12px; border:1px solid var(--border);
+      object-fit:cover; background:#f2f2f5; flex:0 0 auto;
+    }
+    .itemLeft{ display:flex; gap:10px; align-items:flex-start; }
+
+    .sectionHeader{
+      display:flex; justify-content:space-between; align-items:center;
+      margin:10px 0 6px;
+      padding:8px 10px;
+      border-radius:10px;
+      background:#f5f5f7;
+      border:1px solid var(--border);
+    }
+    .sectionHeader .title{ font-weight:800; font-size:13px; }
+
+    .warn{ background:var(--warn-bg); border:1px solid var(--warn-border); padding:10px; border-radius:10px; font-size:12px; color:var(--warn-text); }
+    .ok{ background:var(--ok-bg); border:1px solid var(--ok-border); padding:10px; border-radius:10px; font-size:12px; color:var(--ok-text); }
+
+    .outfit{ border:1px dashed #cfcfd6; border-radius:12px; padding:12px; background:#fbfbfc; }
+    .outfit h3{ margin:0 0 6px; font-size:14px; }
+    .outfit ul{ margin:8px 0 0; padding-left:18px; }
+    .tiny{ font-size:11px; color:#777; }
+
+    hr{ border:0; border-top:1px solid #eee; margin:12px 0; }
+
+    /* Pages */
+    .page{ display:none; }
+    .page.show{ display:block; }
+
+    .grid{ display:grid; gap:12px; }
+    @media (min-width:920px){
+      .grid.two{ grid-template-columns: 1fr 1fr; }
+      .grid.three{ grid-template-columns: 1fr 1fr 1fr; }
+      .grid.one{ grid-template-columns: 1fr; }
+    }
+
+    /* Header actions */
+    .headerRight{ display:flex; align-items:center; gap:10px; }
+    .iconBtn{
+      width:38px; height:38px; border-radius:10px;
+      border:1px solid var(--border);
+      background:#fff;
+      color:#111;
+      display:flex; align-items:center; justify-content:center;
+      cursor:pointer;
+      padding:0;
+    }
+    .iconBtn:active{ transform:scale(0.98); }
+    .iconBtn svg{ width:20px; height:20px; }
+
+    /* Tabs */
+    .tabs{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; min-width:0; }
+    .tabBtn{
+      background:#eaeaec; color:#111;
+      border-radius:999px; padding:8px 12px;
+      font-weight:800; font-size:12px;
+    }
+    .tabBtn.active{ background:var(--accent); color:var(--accent-contrast); }
+
+    /* Modal */
+    .modalBackdrop{
+      position:fixed; inset:0;
+      background:rgba(0,0,0,0.35);
+      display:none; align-items:center; justify-content:center;
+      padding:16px; z-index:50;
+    }
+    .modalBackdrop.show{ display:flex; }
+    .modal{
+      width:min(560px, 100%);
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:14px;
+      box-shadow:0 10px 30px rgba(0,0,0,0.18);
+    }
+    .modalHeader{ display:flex; justify-content:space-between; align-items:center; gap:12px; }
+    .modalHeader h2{ margin:0; font-size:15px; }
+    .swatches{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+    .swatch{ width:34px; height:34px; border-radius:10px; border:1px solid var(--border); cursor:pointer; }
+    .swatch.selected{ outline:3px solid rgba(0,0,0,0.12); }
+    .settingRow{ display:flex; gap:10px; align-items:center; }
+    .settingRow > *{ flex:1; }
+
+    /* Planner */
+    .calGrid{
+      display:grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap:8px;
+      margin-top:10px;
+    }
+    .calCell{
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:10px;
+      background:#fff;
+      min-height:92px;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+    .calCell .dateNum{ font-weight:900; font-size:12px; }
+    .calCell .planned{ font-size:12px; }
+    .calCell .planned b{ font-size:12px; }
+    .calCell button{ font-size:12px; padding:8px 10px; border-radius:10px; }
+    .weekdayRow{
+      display:grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap:8px;
+      margin-top:6px;
+      color:#777;
+      font-size:11px;
+      font-weight:800;
+    }
+    .weekdayRow div{ padding-left:6px; }
+
+    /* Outfit gallery */
+    .gallery{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:10px;
+    }
+    .galleryCard{
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:10px;
+      background:#fff;
+      width:min(320px, 100%);
+    }
+    .galleryThumbs{ display:flex; gap:8px; flex-wrap:wrap; }
+    .stars{ display:flex; gap:6px; align-items:center; }
+    .stars button{ padding:6px 8px; border-radius:10px; font-size:12px; }
+  </style>
+</head>
+
+<body>
+<header>
+  <div class="brand">
+    <h1>Closet Outfit Picker</h1>
+    <div class="muted" id="subtitle">Today</div>
+  </div>
+
+  <div class="headerRight">
+    <div class="tabs" role="tablist" aria-label="Pages">
+      <button class="tabBtn active" id="tabToday" role="tab">Today</button>
+      <button class="tabBtn" id="tabLibrary" role="tab">Library</button>
+      <button class="tabBtn" id="tabPlanner" role="tab">Planner</button>
+      <button class="tabBtn" id="tabHistory" role="tab">Outfits</button>
+      <button class="tabBtn" id="tabInsights" role="tab">Insights</button>
+      <button class="tabBtn" id="tabShop" role="tab">Shop</button>
+      <button class="tabBtn" id="tabTrips" role="tab">Trips</button>
+    </div>
+
+    <button class="iconBtn" id="openSettings" aria-label="Settings" title="Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="3"></circle>
+        <path d="M19.4 15a7.7 7.7 0 0 0 .1-2l2-1.5-2-3.5-2.4 1a8 8 0 0 0-1.7-1l-.3-2.6H9l-.3 2.6a8 8 0 0 0-1.7 1l-2.4-1-2 3.5 2 1.5a7.7 7.7 0 0 0 .1 2l-2 1.5 2 3.5 2.4-1a8 8 0 0 0 1.7 1l.3 2.6h6l.3-2.6a8 8 0 0 0 1.7-1l2.4 1 2-3.5-2-1.5z"></path>
+      </svg>
+    </button>
+  </div>
+</header>
+
+<main>
+
+  <!-- PAGE: TODAY -->
+  <div class="page show" id="pageToday">
+    <div class="grid two">
+
+      <section class="card">
+        <h2>Today setup (quick)</h2>
+
+        <div class="row">
+          <div>
+            <label>Occasion</label>
+            <select id="occasion">
+              <option value="auto">Auto (from calendar if available)</option>
+              <option value="everyday">Everyday</option>
+              <option value="work">Work</option>
+              <option value="date">Date</option>
+              <option value="event">Event</option>
+              <option value="outdoors">Outdoors</option>
+              <option value="travel">Travel</option>
+              <option value="gym">Gym</option>
+            </select>
+          </div>
+          <div>
+            <label>Agenda date</label>
+            <input id="agendaDate" type="date" />
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>Import calendar (.ics)</label>
+            <input id="icsFile" type="file" accept=".ics,text/calendar" />
+          </div>
+          <div>
+            <label>Notes (optional)</label>
+            <input id="dayNotes" placeholder="e.g., walking a lot, client meeting, dinner after work" />
+          </div>
+        </div>
+
+        <div class="footer">
+          <button class="secondary" id="scanToday">Scan agenda</button>
+          <button class="secondary" id="clearCal">Clear calendar</button>
+        </div>
+
+        <div id="agendaArea" style="margin-top:10px;"></div>
+
+        <hr>
+
+        <h2>Style preferences</h2>
+
+        <div class="row">
+          <div>
+            <label>Style vibe</label>
+            <select id="styleVibe">
+              <option value="classic">Classic</option>
+              <option value="street">Street</option>
+              <option value="minimal">Minimal</option>
+              <option value="outdoorsy">Outdoorsy</option>
+              <option value="preppy">Preppy</option>
+              <option value="creative">Creative</option>
+            </select>
+          </div>
+          <div>
+            <label>Preferred formality</label>
+            <select id="prefFormality">
+              <option value="casual">Casual</option>
+              <option value="smart">Smart casual</option>
+              <option value="formal">Formal</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>Color preference</label>
+            <select id="prefColor">
+              <option value="any">Any</option>
+              <option value="neutral">Mostly neutral</option>
+              <option value="earth">Earthy</option>
+              <option value="cool">Cool tones</option>
+              <option value="warm">Warm tones</option>
+              <option value="bright">Bold colors</option>
+              <option value="dark">Mostly dark</option>
+            </select>
+          </div>
+          <div>
+            <label>Avoid (comma-separated)</label>
+            <input id="avoid" placeholder="e.g., wool, white pants, sandals" />
+          </div>
+        </div>
+
+        <div class="tiny" style="margin-top:10px;">
+          This page is meant to be quick. Add/edit clothes in <b>Library</b>.
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Weather + outfit</h2>
+
+        <div class="row">
+          <div>
+            <label>Auto weather</label>
+            <button class="secondary" id="useLocation">Get weather</button>
+          </div>
+          <div>
+            <label>Temp (°F)</label>
+            <input id="manualTemp" type="number" placeholder="e.g., 72" />
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>Rain chance (%)</label>
+            <input id="manualRain" type="number" placeholder="e.g., 20" />
+          </div>
+          <div>
+            <label>Weather note</label>
+            <input id="weatherNote" placeholder="e.g., windy, humid, indoor all day" />
+          </div>
+        </div>
+
+        <div id="weatherReadout" class="muted" style="margin-top:8px;"></div>
+
+        <div class="footer">
+          <button id="gen">Generate outfit</button>
+          <button class="secondary" id="gen3">Generate 3 options</button>
+          <button class="secondary" id="planToday">Plan on calendar</button>
+        </div>
+
+        <div id="outfitArea" style="margin-top:10px;"></div>
+        <div id="recArea" style="margin-top:10px;"></div>
+
+        <div class="tiny" style="margin-top:10px;">
+          Use ❤️ to save outfits you like. Your likes/dislikes train the picker.
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <!-- PAGE: LIBRARY -->
+  <div class="page" id="pageLibrary">
+    <div class="grid one">
+
+      <section class="card">
+        <h2>Clothing library</h2>
+        <div class="muted">Add items here. Toggle “In rotation” for seasonal storage. Add price for cost-per-wear.</div>
+
+        <div class="row">
+          <div>
+            <label>Search</label>
+            <input id="libSearch" placeholder="Search name, notes, brand…" />
+          </div>
+          <div>
+            <label>Filter category</label>
+            <select id="libFilterCat">
+              <option value="all">All</option>
+              <option value="top">Top</option>
+              <option value="bottom">Bottom</option>
+              <option value="shoes">Shoes</option>
+              <option value="outerwear">Outerwear</option>
+              <option value="dress">Dress / One-piece</option>
+              <option value="accessory">Accessory</option>
+            </select>
+          </div>
+          <div>
+            <label>Rotation</label>
+            <select id="libFilterRotation">
+              <option value="all">All</option>
+              <option value="active">In rotation</option>
+              <option value="storage">In storage</option>
+            </select>
+          </div>
+        </div>
+
+        <hr>
+
+        <h2>Add clothing item</h2>
+
+        <div class="row">
+          <div>
+            <label>Category</label>
+            <select id="cat">
+              <option value="top">Top</option>
+              <option value="bottom">Bottom</option>
+              <option value="shoes">Shoes</option>
+              <option value="outerwear">Outerwear</option>
+              <option value="dress">Dress / One-piece</option>
+              <option value="accessory">Accessory</option>
+            </select>
+          </div>
+          <div>
+            <label>Name</label>
+            <input id="name" placeholder="e.g., White Oxford Shirt" />
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>Warmth</label>
+            <select id="warmth">
+              <option value="light">Light (hot)</option>
+              <option value="mid">Mid</option>
+              <option value="warm">Warm (cold)</option>
+            </select>
+          </div>
+          <div>
+            <label>Formality</label>
+            <select id="formality">
+              <option value="casual">Casual</option>
+              <option value="smart">Smart casual</option>
+              <option value="formal">Formal</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>Color family</label>
+            <select id="color">
+              <option value="neutral">Neutral</option>
+              <option value="dark">Dark</option>
+              <option value="bright">Bright</option>
+              <option value="earth">Earth</option>
+              <option value="cool">Cool tones</option>
+              <option value="warm">Warm tones</option>
+            </select>
+          </div>
+          <div>
+            <label>Water resistant?</label>
+            <select id="rainOk">
+              <option value="no">No</option>
+              <option value="yes">Yes</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>Brand (optional)</label>
+            <input id="brand" placeholder="e.g., Uniqlo, Nike" />
+          </div>
+          <div>
+            <label>Price (optional)</label>
+            <input id="price" type="number" placeholder="e.g., 49.99" />
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>Seasons (optional)</label>
+            <select id="seasons" multiple>
+              <option value="spring">Spring</option>
+              <option value="summer">Summer</option>
+              <option value="fall">Fall</option>
+              <option value="winter">Winter</option>
+            </select>
+            <div class="tiny">Tip: tap multiple seasons (iPad: hold then tap).</div>
+          </div>
+          <div>
+            <label>In rotation</label>
+            <select id="inRotation">
+              <option value="yes">Yes</option>
+              <option value="no">No (storage)</option>
+            </select>
+          </div>
+        </div>
+
+        <label>Photo (optional)</label>
+        <div class="row tight">
+          <input id="photo" type="file" accept="image/*" capture="environment" />
+          <button class="secondary" id="photoBgBeta" type="button" title="Makes background transparent-ish (best for solid backgrounds)">BG remove (beta)</button>
+        </div>
+        <div class="tiny" id="bgBetaStatus">BG remove beta is off.</div>
+
+        <label>Notes (optional)</label>
+        <input id="notes" placeholder="e.g., goes with jeans, avoid with rain, etc." />
+
+        <div class="footer">
+          <button id="add">Add item</button>
+          <button class="secondary" id="seed">Seed starter closet</button>
+          <button class="secondary" id="exportCloset">Export backup</button>
+          <button class="secondary" id="importClosetBtn">Import backup</button>
+          <button class="danger" id="wipe">Wipe closet</button>
+        </div>
+
+        <input id="importClosetFile" type="file" accept="application/json" style="display:none" />
+
+        <div style="margin-top:10px" class="kpi" id="closetStats"></div>
+        <div class="list" id="closetList" style="margin-top:10px"></div>
+      </section>
+
+    </div>
+  </div>
+
+  <!-- PAGE: PLANNER -->
+  <div class="page" id="pagePlanner">
+    <div class="grid two">
+      <section class="card">
+        <h2>Planner</h2>
+        <div class="row">
+          <div>
+            <label>Month</label>
+            <input id="planMonth" type="month" />
+          </div>
+          <div>
+            <label>Quick actions</label>
+            <div class="footer" style="margin-top:0">
+              <button class="secondary" id="planClearMonth">Clear month plans</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="weekdayRow">
+          <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+        </div>
+        <div class="calGrid" id="calGrid"></div>
+
+        <div class="tiny" style="margin-top:10px;">
+          Tap “Plan” inside a day to pick from saved outfits, or plan “Today” from the Today page.
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Plans for selected day</h2>
+        <div class="muted" id="planSelectedLabel">Select a day in the calendar.</div>
+        <div id="planSelectedArea" style="margin-top:10px;"></div>
+      </section>
+    </div>
+  </div>
+
+  <!-- PAGE: OUTFIT HISTORY -->
+  <div class="page" id="pageHistory">
+    <div class="grid two">
+      <section class="card">
+        <h2>Outfit history</h2>
+        <div class="row">
+          <div>
+            <label>Filter</label>
+            <select id="histFilter">
+              <option value="all">All</option>
+              <option value="saved">Saved only</option>
+              <option value="planned">Planned only</option>
+              <option value="rated">Rated only</option>
+              <option value="liked">Liked only</option>
+            </select>
+          </div>
+          <div>
+            <label>Search</label>
+            <input id="histSearch" placeholder="Search by occasion, notes…" />
+          </div>
+        </div>
+        <div id="historyArea" class="gallery"></div>
+      </section>
+
+      <section class="card">
+        <h2>Quick tools</h2>
+        <div class="muted">Train the app faster by rating outfits.</div>
+        <div class="footer">
+          <button class="secondary" id="recoRebuild">Rebuild recommendations</button>
+          <button class="secondary" id="exportOutfits">Export outfits</button>
+        </div>
+        <div class="tiny" style="margin-top:10px;">
+          Export outfits is separate from closet backup (handy if you experiment a lot).
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- PAGE: INSIGHTS -->
+  <div class="page" id="pageInsights">
+    <div class="grid three">
+      <section class="card">
+        <h2>Usage analytics</h2>
+        <div class="muted">Most/least worn + cost per wear.</div>
+        <div id="analyticsArea" style="margin-top:10px;"></div>
+      </section>
+
+      <section class="card">
+        <h2>Capsule builder</h2>
+        <div class="muted">Suggested “core” items + missing essentials.</div>
+        <div class="footer" style="margin-top:0">
+          <button class="secondary" id="buildCapsule">Build capsule</button>
+        </div>
+        <div id="capsuleArea" style="margin-top:10px;"></div>
+      </section>
+
+      <section class="card">
+        <h2>Outfit scores</h2>
+        <div class="muted">Confidence score: weather + formality + color harmony (simple).</div>
+        <div id="scoresArea" style="margin-top:10px;"></div>
+      </section>
+    </div>
+  </div>
+
+  <!-- PAGE: SHOP -->
+  <div class="page" id="pageShop">
+    <div class="grid two">
+      <section class="card">
+        <h2>Smart shopping recommendations</h2>
+        <div class="muted">Based on your closet gaps + what you actually wear.</div>
+        <div class="footer" style="margin-top:0">
+          <button class="secondary" id="refreshShop">Refresh suggestions</button>
+        </div>
+        <div id="shopRecsArea" style="margin-top:10px;"></div>
+      </section>
+
+      <section class="card">
+        <h2>Wishlist</h2>
+        <div class="row">
+          <div>
+            <label>Item name</label>
+            <input id="wishName" placeholder="e.g., Waterproof Chelsea boots" />
+          </div>
+          <div>
+            <label>Category</label>
+            <select id="wishCat">
+              <option value="top">Top</option>
+              <option value="bottom">Bottom</option>
+              <option value="shoes">Shoes</option>
+              <option value="outerwear">Outerwear</option>
+              <option value="dress">Dress / One-piece</option>
+              <option value="accessory">Accessory</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>Link (optional)</label>
+            <input id="wishLink" placeholder="https://…" />
+          </div>
+          <div>
+            <label>Budget (optional)</label>
+            <input id="wishBudget" type="number" placeholder="e.g., 120" />
+          </div>
+        </div>
+        <label>Notes</label>
+        <input id="wishNotes" placeholder="e.g., black, matte leather, rainproof" />
+
+        <div class="footer">
+          <button id="wishAdd">Add to wishlist</button>
+          <button class="secondary" id="wishClear">Clear purchased</button>
+        </div>
+
+        <div id="wishlistArea" style="margin-top:10px;"></div>
+      </section>
+    </div>
+  </div>
+
+  <!-- PAGE: TRIPS -->
+  <div class="page" id="pageTrips">
+    <div class="grid two">
+      <section class="card">
+        <h2>Packing list generator</h2>
+        <div class="muted">Works offline with manual weather OR uses your current location weather.</div>
+
+        <div class="row">
+          <div>
+            <label>Trip length (days)</label>
+            <input id="tripDays" type="number" value="4" />
+          </div>
+          <div>
+            <label>Main activities</label>
+            <select id="tripOccasion">
+              <option value="mixed">Mixed</option>
+              <option value="work">Work</option>
+              <option value="outdoors">Outdoors</option>
+              <option value="event">Event</option>
+              <option value="travel">Travel</option>
+              <option value="gym">Gym</option>
+              <option value="everyday">Everyday</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>Expected temp (°F)</label>
+            <input id="tripTemp" type="number" placeholder="e.g., 65" />
+          </div>
+          <div>
+            <label>Rain chance (%)</label>
+            <input id="tripRain" type="number" placeholder="e.g., 30" />
+          </div>
+        </div>
+
+        <label>Trip notes</label>
+        <input id="tripNotes" placeholder="e.g., fancy dinners, lots of walking, one hike" />
+
+        <div class="footer">
+          <button class="secondary" id="tripUseTodayWeather">Use today’s weather</button>
+          <button id="tripGenerate">Generate packing list</button>
+        </div>
+
+        <div id="tripOutput" style="margin-top:10px;"></div>
+      </section>
+
+      <section class="card">
+        <h2>Best-of closet for trips</h2>
+        <div class="muted">Your most versatile items (based on saved/liked outfits).</div>
+        <div class="footer" style="margin-top:0">
+          <button class="secondary" id="tripVersatile">Show versatile items</button>
+        </div>
+        <div id="tripVersatileArea" style="margin-top:10px;"></div>
+      </section>
+    </div>
+  </div>
+
+</main>
+
+<!-- SETTINGS MODAL -->
+<div class="modalBackdrop" id="settingsBackdrop" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div class="modalHeader">
+      <h2 id="settingsTitle">Settings</h2>
+      <button class="secondary small" id="closeSettings">Close</button>
+    </div>
+
+    <div style="margin-top:10px;">
+      <div class="muted">Theme presets</div>
+      <div class="swatches" id="swatches"></div>
+
+      <div style="margin-top:12px;" class="settingRow">
+        <div>
+          <label>Accent color</label>
+          <input id="customAccent" type="color" value="#111111" />
+        </div>
+        <div>
+          <label>Background color</label>
+          <input id="customBackground" type="color" value="#f6f6f7" />
+        </div>
+      </div>
+
+      <div style="margin-top:12px;" class="settingRow">
+        <div>
+          <label>Category order</label>
+          <select id="catOrderSelect">
+            <option value="top,bottom,shoes,outerwear,dress,accessory">Default</option>
+            <option value="top,bottom,outerwear,shoes,dress,accessory">Outerwear before shoes</option>
+            <option value="shoes,top,bottom,outerwear,dress,accessory">Shoes first</option>
+          </select>
+        </div>
+        <div>
+          <label>&nbsp;</label>
+          <button class="secondary" id="applyCustom">Apply</button>
+        </div>
+      </div>
+
+      <div class="tiny" style="margin-top:8px;">
+        Theme + category order are saved on-device.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+
+  // IMPORTANT: keep these keys so you do NOT lose your existing closet
+  const STORAGE_KEY = "closet_outfit_app_v5_items";
+  const PREF_KEY    = "closet_outfit_app_v5_prefs";
+  const CAL_KEY     = "closet_outfit_app_v5_calendar_cache";
+  const THEME_KEY   = "closet_outfit_app_v5_theme";
+
+  // New feature keys
+  const OUTFITS_KEY = "closet_outfit_app_v5_outfits";        // history + saved outfits
+  const PLANS_KEY   = "closet_outfit_app_v5_plans";          // date -> outfitId
+  const WISH_KEY    = "closet_outfit_app_v5_wishlist";
+  const MODEL_KEY   = "closet_outfit_app_v5_model";          // learned likes/dislikes by category/attributes
+  const UI_KEY      = "closet_outfit_app_v5_ui";             // category order, etc
+  const WEATHER_KEY = "closet_outfit_app_v5_weather_cache";  // last weather
+
+  // ---------- Page navigation ----------
+  const pages = {
+    today: "pageToday",
+    library: "pageLibrary",
+    planner: "pagePlanner",
+    history: "pageHistory",
+    insights: "pageInsights",
+    shop: "pageShop",
+    trips: "pageTrips"
+  };
+  const tabs = {
+    today: "tabToday",
+    library: "tabLibrary",
+    planner: "tabPlanner",
+    history: "tabHistory",
+    insights: "tabInsights",
+    shop: "tabShop",
+    trips: "tabTrips"
+  };
+
+  function showPage(which){
+    Object.entries(pages).forEach(([k, pid]) => {
+      $(pid).classList.toggle("show", k === which);
+      $(tabs[k]).classList.toggle("active", k === which);
+    });
+    const subtitleMap = {
+      today:"Today", library:"Library", planner:"Planner",
+      history:"Outfits", insights:"Insights", shop:"Shop", trips:"Trips"
+    };
+    $("subtitle").textContent = subtitleMap[which] || "Today";
+
+    // refresh page-specific views
+    if(which === "library") renderCloset();
+    if(which === "planner") renderPlanner();
+    if(which === "history") renderHistory();
+    if(which === "insights") renderInsights();
+    if(which === "shop") renderShop();
+    if(which === "trips") { /* noop */ }
+  }
+
+  $("tabToday").onclick = () => showPage("today");
+  $("tabLibrary").onclick = () => showPage("library");
+  $("tabPlanner").onclick = () => showPage("planner");
+  $("tabHistory").onclick = () => showPage("history");
+  $("tabInsights").onclick = () => showPage("insights");
+  $("tabShop").onclick = () => showPage("shop");
+  $("tabTrips").onclick = () => showPage("trips");
+
+  // ---------- Theme helpers ----------
+  function hexToRgb(hex){
+    const h = (hex || "").replace("#","").trim();
+    if(h.length === 3){
+      const r = parseInt(h[0]+h[0],16);
+      const g = parseInt(h[1]+h[1],16);
+      const b = parseInt(h[2]+h[2],16);
+      return {r,g,b};
+    }
+    if(h.length !== 6) return null;
+    return { r:parseInt(h.slice(0,2),16), g:parseInt(h.slice(2,4),16), b:parseInt(h.slice(4,6),16) };
+  }
+  function readableTextOn(hex){
+    const rgb = hexToRgb(hex);
+    if(!rgb) return "#fff";
+    const srgb = [rgb.r, rgb.g, rgb.b].map(v => {
+      const c = v/255;
+      return c <= 0.03928 ? c/12.92 : Math.pow((c+0.055)/1.055, 2.4);
+    });
+    const L = 0.2126*srgb[0] + 0.7152*srgb[1] + 0.0722*srgb[2];
+    return (L > 0.5) ? "#111" : "#fff";
+  }
+  function loadTheme(){ try { return JSON.parse(localStorage.getItem(THEME_KEY)) || null; } catch { return null; } }
+  function saveTheme(theme){ localStorage.setItem(THEME_KEY, JSON.stringify(theme)); }
+  function applyTheme(theme){
+    const accent = theme?.accent || "#111111";
+    const background = theme?.background || "#f6f6f7";
+    document.documentElement.style.setProperty("--accent", accent);
+    document.documentElement.style.setProperty("--accent-contrast", readableTextOn(accent));
+    document.documentElement.style.setProperty("--bg", background);
+    if($("customAccent")) $("customAccent").value = accent;
+    if($("customBackground")) $("customBackground").value = background;
+  }
+  function setTheme(accent, background){
+    const theme = { accent, background };
+    saveTheme(theme);
+    applyTheme(theme);
+    highlightSelectedPreset(theme);
+  }
+
+  const presets = [
+    { accent:"#111111", background:"#f6f6f7" },
+    { accent:"#0b5fff", background:"#eef4ff" },
+    { accent:"#7c3aed", background:"#f5f3ff" },
+    { accent:"#059669", background:"#ecfdf5" },
+    { accent:"#dc2626", background:"#fef2f2" },
+    { accent:"#d97706", background:"#fffbeb" },
+    { accent:"#0f766e", background:"#f0fdfa" },
+    { accent:"#334155", background:"#f1f5f9" }
+  ];
+
+  function buildSwatches(){
+    const wrap = $("swatches");
+    wrap.innerHTML = "";
+    presets.forEach(p => {
+      const d = document.createElement("div");
+      d.className = "swatch";
+      d.style.background = p.accent;
+      d.setAttribute("data-accent", p.accent);
+      d.setAttribute("data-bg", p.background);
+      d.title = `Accent ${p.accent} / Background ${p.background}`;
+      d.onclick = () => setTheme(p.accent, p.background);
+      wrap.appendChild(d);
+    });
+    highlightSelectedPreset(loadTheme() || presets[0]);
+  }
+  function highlightSelectedPreset(theme){
+    const a = (theme?.accent || "").toLowerCase();
+    const b = (theme?.background || "").toLowerCase();
+    document.querySelectorAll(".swatch").forEach(el => {
+      const ea = (el.getAttribute("data-accent") || "").toLowerCase();
+      const eb = (el.getAttribute("data-bg") || "").toLowerCase();
+      el.classList.toggle("selected", ea === a && eb === b);
+    });
+  }
+
+  // Settings modal
+  function openSettings(){
+    $("settingsBackdrop").classList.add("show");
+    $("settingsBackdrop").setAttribute("aria-hidden","false");
+    // load UI setting
+    const ui = loadUI();
+    $("catOrderSelect").value = (ui.catOrder || defaultCatOrder()).join(",");
+  }
+  function closeSettings(){
+    $("settingsBackdrop").classList.remove("show");
+    $("settingsBackdrop").setAttribute("aria-hidden","true");
+  }
+  $("openSettings").onclick = () => openSettings();
+  $("closeSettings").onclick = () => closeSettings();
+  $("settingsBackdrop").onclick = (e) => { if(e.target === $("settingsBackdrop")) closeSettings(); };
+
+  // ---------- UI settings ----------
+  function defaultCatOrder(){ return ["top","bottom","shoes","outerwear","dress","accessory"]; }
+  function loadUI(){ try { return JSON.parse(localStorage.getItem(UI_KEY)) || {}; } catch { return {}; } }
+  function saveUI(ui){ localStorage.setItem(UI_KEY, JSON.stringify(ui)); }
+  function getCatOrder(){
+    const ui = loadUI();
+    const arr = ui.catOrder;
+    if(Array.isArray(arr) && arr.length) return arr;
+    return defaultCatOrder();
+  }
+
+  $("applyCustom").onclick = () => {
+    const accent = $("customAccent").value || "#111111";
+    const background = $("customBackground").value || "#f6f6f7";
+    setTheme(accent, background);
+
+    const ui = loadUI();
+    const val = ($("catOrderSelect").value || "").split(",").map(s=>s.trim()).filter(Boolean);
+    ui.catOrder = val.length ? val : defaultCatOrder();
+    saveUI(ui);
+
+    renderCloset();
+    closeSettings();
+  };
+
+  // ---------- IndexedDB for photos ----------
+  const DB_NAME = "closet_outfit_app_v5_db";
+  const DB_VER  = 1;
+  const STORE   = "photos";
+
+  function openDB(){
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(DB_NAME, DB_VER);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if(!db.objectStoreNames.contains(STORE)){
+          db.createObjectStore(STORE, { keyPath:"photoId" });
+        }
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+  async function putPhoto(photoId, blob){
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE, "readwrite");
+      tx.objectStore(STORE).put({ photoId, blob });
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+  async function getPhotoURL(photoId){
+    if(!photoId) return null;
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE, "readonly");
+      const req = tx.objectStore(STORE).get(photoId);
+      req.onsuccess = () => resolve(req.result ? URL.createObjectURL(req.result.blob) : null);
+      req.onerror = () => reject(req.error);
+    });
+  }
+  async function deletePhoto(photoId){
+    if(!photoId) return;
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE, "readwrite");
+      tx.objectStore(STORE).delete(photoId);
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+  async function getPhotoBlob(photoId){
+    if(!photoId) return null;
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE, "readonly");
+      const req = tx.objectStore(STORE).get(photoId);
+      req.onsuccess = () => resolve(req.result?.blob || null);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  // ---------- Local storage ----------
+  function loadItems(){ try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch { return []; } }
+  function saveItems(items){ localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); }
+  function loadPrefs(){ try { return JSON.parse(localStorage.getItem(PREF_KEY)) || {}; } catch { return {}; } }
+  function savePrefs(p){ localStorage.setItem(PREF_KEY, JSON.stringify(p)); }
+  function loadCal(){ try { return JSON.parse(localStorage.getItem(CAL_KEY)) || null; } catch { return null; } }
+  function saveCal(obj){ localStorage.setItem(CAL_KEY, JSON.stringify(obj)); }
+
+  function loadOutfits(){ try { return JSON.parse(localStorage.getItem(OUTFITS_KEY)) || []; } catch { return []; } }
+  function saveOutfits(arr){ localStorage.setItem(OUTFITS_KEY, JSON.stringify(arr)); }
+  function loadPlans(){ try { return JSON.parse(localStorage.getItem(PLANS_KEY)) || {}; } catch { return {}; } }
+  function savePlans(o){ localStorage.setItem(PLANS_KEY, JSON.stringify(o)); }
+  function loadWish(){ try { return JSON.parse(localStorage.getItem(WISH_KEY)) || []; } catch { return []; } }
+  function saveWish(arr){ localStorage.setItem(WISH_KEY, JSON.stringify(arr)); }
+  function loadModel(){ try { return JSON.parse(localStorage.getItem(MODEL_KEY)) || null; } catch { return null; } }
+  function saveModel(m){ localStorage.setItem(MODEL_KEY, JSON.stringify(m)); }
+  function loadWeatherCache(){ try { return JSON.parse(localStorage.getItem(WEATHER_KEY)) || null; } catch { return null; } }
+  function saveWeatherCache(w){ localStorage.setItem(WEATHER_KEY, JSON.stringify(w)); }
+
+  let closet = loadItems();
+  let prefs = loadPrefs();
+  let calCache = loadCal();
+  let outfits = loadOutfits();
+  let plans = loadPlans();
+  let wishlist = loadWish();
+  let model = loadModel() || { likes:{}, dislikes:{}, stats:{ generated:0, saved:0, worn:0 } };
+
+  // ---------- Utils ----------
+  function escapeHtml(s){
+    return (s||"").replace(/[&<>"']/g, c=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+  }
+  function readFileAsText(file){
+    return new Promise((resolve, reject) => {
+      const fr = new FileReader();
+      fr.onload = () => resolve(fr.result);
+      fr.onerror = () => reject(fr.error);
+      fr.readAsText(file);
+    });
+  }
+  function fmtMoney(n){
+    const x = Number(n);
+    if(!Number.isFinite(x)) return "";
+    return `$${x.toFixed(2)}`;
+  }
+  function ymd(d){
+    const dt = (d instanceof Date) ? d : new Date(d);
+    return dt.toISOString().slice(0,10);
+  }
+
+  // ---------- Photo compression + optional BG remove (beta) ----------
+  let bgRemoveEnabled = false;
+  $("photoBgBeta").onclick = () => {
+    bgRemoveEnabled = !bgRemoveEnabled;
+    $("bgBetaStatus").textContent = bgRemoveEnabled ? "BG remove beta is ON." : "BG remove beta is off.";
+  };
+
+  async function imageFileToCanvas(file){
+    const img = new Image();
+    const dataUrl = await new Promise((resolve, reject) => {
+      const fr = new FileReader();
+      fr.onload = () => resolve(fr.result);
+      fr.onerror = () => reject(fr.error);
+      fr.readAsDataURL(file);
+    });
+    img.src = dataUrl;
+    await new Promise((res, rej)=>{ img.onload=res; img.onerror=rej; });
+
+    const w = img.naturalWidth, h = img.naturalHeight;
+    const maxSide = 900;
+    const scale = Math.min(1, maxSide / Math.max(w,h));
+    const cw = Math.round(w*scale), ch = Math.round(h*scale);
+
+    const canvas = document.createElement("canvas");
+    canvas.width = cw; canvas.height = ch;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(img, 0, 0, cw, ch);
+    return canvas;
+  }
+
+  function bgRemoveBeta(canvas){
+    // Naive: sample corners as background; make pixels close to that transparent.
+    // Works best with solid/near-solid backgrounds.
+    const ctx = canvas.getContext("2d");
+    const {width:w, height:h} = canvas;
+    const img = ctx.getImageData(0,0,w,h);
+    const d = img.data;
+
+    function sample(x,y){
+      const i = (y*w + x) * 4;
+      return [d[i], d[i+1], d[i+2]];
+    }
+    const corners = [
+      sample(0,0), sample(w-1,0), sample(0,h-1), sample(w-1,h-1),
+      sample(Math.floor(w/2),0), sample(Math.floor(w/2),h-1)
+    ];
+    // average
+    let br=0,bg=0,bb=0;
+    corners.forEach(c=>{ br+=c[0]; bg+=c[1]; bb+=c[2]; });
+    br/=corners.length; bg/=corners.length; bb/=corners.length;
+
+    const threshold = 42; // conservative
+    for(let i=0; i<d.length; i+=4){
+      const r=d[i], g=d[i+1], b=d[i+2];
+      const dist = Math.sqrt((r-br)**2 + (g-bg)**2 + (b-bb)**2);
+      if(dist < threshold){
+        d[i+3] = 0;
+      }
+    }
+    ctx.putImageData(img,0,0);
+  }
+
+  async function canvasToBlob(canvas, type="image/png", quality=0.9){
+    return await new Promise((resolve)=> canvas.toBlob(resolve, type, quality));
+  }
+
+  async function processPhoto(file){
+    const canvas = await imageFileToCanvas(file);
+    if(bgRemoveEnabled) bgRemoveBeta(canvas);
+    // store PNG if bg removed (supports transparency), else jpeg smaller
+    if(bgRemoveEnabled){
+      return await canvasToBlob(canvas, "image/png");
+    }else{
+      return await canvasToBlob(canvas, "image/jpeg", 0.82);
+    }
+  }
+
+  // ---------- Weather ----------
+  async function fetchWeatherFromGeo(lat, lon){
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,precipitation&hourly=precipitation_probability&temperature_unit=fahrenheit&timezone=auto`;
+    const r = await fetch(url);
+    if(!r.ok) throw new Error("Weather fetch failed");
+    const j = await r.json();
+    const tempF = j?.current?.temperature_2m ?? null;
+    let rain = null;
+    const nowIso = j?.current?.time;
+    const times = j?.hourly?.time || [];
+    const probs = j?.hourly?.precipitation_probability || [];
+    if(nowIso && times.length === probs.length){
+      const idx = times.indexOf(nowIso);
+      if(idx >= 0) rain = probs[idx];
+    }
+    return { tempF, rainChance: rain ?? 0, fetchedAt: Date.now() };
+  }
+  function setWeatherReadout(tempF, rainChance, source){
+    $("weatherReadout").textContent = `${source}: ${Math.round(tempF)}°F, rain chance ~${Math.round(rainChance)}%`;
+  }
+  async function tryAutoWeatherOnLoad(){
+    const cache = loadWeatherCache();
+    if(cache?.tempF != null && cache?.fetchedAt && (Date.now() - cache.fetchedAt) < 3*60*60*1000){
+      $("manualTemp").value = Math.round(cache.tempF);
+      $("manualRain").value = Math.round(cache.rainChance ?? 0);
+      setWeatherReadout(cache.tempF, cache.rainChance ?? 0, "Weather (cached)");
+      return;
+    }
+    // don’t spam permission prompts: only auto-fetch if user already used it before
+    if(!cache?.allowAuto) return;
+    if(!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      try{
+        const { latitude, longitude } = pos.coords;
+        const w = await fetchWeatherFromGeo(latitude, longitude);
+        if(w.tempF != null){
+          $("manualTemp").value = Math.round(w.tempF);
+          $("manualRain").value = Math.round(w.rainChance ?? 0);
+          setWeatherReadout(w.tempF, w.rainChance ?? 0, "Weather");
+          saveWeatherCache({ ...w, allowAuto:true });
+        }
+      } catch {}
+    }, () => {});
+  }
+
+  $("useLocation").onclick = () => {
+    if(!navigator.geolocation){ alert("Geolocation not available."); return; }
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      try{
+        const { latitude, longitude } = pos.coords;
+        const w = await fetchWeatherFromGeo(latitude, longitude);
+        if(w.tempF != null){
+          $("manualTemp").value = Math.round(w.tempF);
+          $("manualRain").value = Math.round(w.rainChance ?? 0);
+          setWeatherReadout(w.tempF, w.rainChance ?? 0, "Weather");
+          saveWeatherCache({ ...w, allowAuto:true });
+        }
+      } catch {
+        alert("Could not fetch weather. You can enter it manually.");
+      }
+    }, () => alert("Location denied. Enter weather manually."));
+  };
+
+  function deriveWarmthTarget(tempF){
+    if(tempF >= 78) return "light";
+    if(tempF >= 60) return "mid";
+    return "warm";
+  }
+
+  // ---------- Calendar (.ics) parsing ----------
+  function parseIcsDate(s){
+    if(!s) return null;
+    const v = s.trim();
+    if(/^\d{8}$/.test(v)){
+      const y = +v.slice(0,4), m = +v.slice(4,6)-1, d = +v.slice(6,8);
+      return new Date(y,m,d);
+    }
+    const m = v.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(Z)?$/);
+    if(!m) return null;
+    const [_,Y,M,D,h,mi,sec,z] = m;
+    if(z) return new Date(Date.UTC(+Y,+M-1,+D,+h,+mi,+sec));
+    return new Date(+Y, +M-1, +D, +h, +mi, +sec);
+  }
+  function unfoldIcsLines(text){ return text.replace(/\r?\n[ \t]/g, ""); }
+  function parseIcs(text){
+    const t = unfoldIcsLines(text);
+    const lines = t.split(/\r?\n/);
+    const events = [];
+    let cur = null;
+
+    function getValue(line){
+      const idx = line.indexOf(":");
+      return idx >= 0 ? line.slice(idx+1) : "";
+    }
+
+    for(const raw of lines){
+      const line = raw.trim();
+      if(line === "BEGIN:VEVENT"){ cur = {}; continue; }
+      if(line === "END:VEVENT"){
+        if(cur && cur.start && cur.end && cur.title) events.push(cur);
+        cur = null; continue;
+      }
+      if(!cur) continue;
+
+      const upper = line.toUpperCase();
+      if(upper.startsWith("DTSTART")) cur.start = parseIcsDate(getValue(line));
+      else if(upper.startsWith("DTEND")) cur.end = parseIcsDate(getValue(line));
+      else if(upper.startsWith("SUMMARY")) cur.title = getValue(line);
+      else if(upper.startsWith("LOCATION")) cur.location = getValue(line);
+      else if(upper.startsWith("DESCRIPTION")) cur.desc = getValue(line);
+    }
+
+    return events.map(e => ({
+      start: e.start?.toISOString(),
+      end: e.end?.toISOString(),
+      title: e.title || "",
+      location: e.location || "",
+      desc: e.desc || ""
+    })).filter(e => e.start && e.end && e.title);
+  }
+
+  function eventsForDate(dateStr){
+    if(!calCache?.events?.length) return [];
+    const dayStart = new Date(dateStr + "T00:00:00");
+    const dayEnd   = new Date(dateStr + "T23:59:59");
+    const a = dayStart.getTime(), b = dayEnd.getTime();
+    return calCache.events.filter(ev=>{
+      const s = new Date(ev.start).getTime();
+      const e = new Date(ev.end).getTime();
+      return (s <= b && e >= a);
+    }).sort((x,y)=> new Date(x.start) - new Date(y.start));
+  }
+
+  function inferOccasionFromEvents(events, freeTextNotes=""){
+    const hay = (events.map(e=>`${e.title} ${e.location} ${e.desc}`).join(" ") + " " + (freeTextNotes||"")).toLowerCase();
+    const has = (...words) => words.some(w => hay.includes(w));
+
+    if(has("flight","airport","check-in","hotel","airbnb","rental car","train","station","boarding")) return "travel";
+    if(has("hike","trail","camp","camping","climb","ski","snowboard","beach","kayak","outdoor")) return "outdoors";
+    if(has("gym","workout","training","run","yoga","spin","pilates","crossfit")) return "gym";
+    if(has("wedding","gala","ceremony","reception","party","black tie","formal","fundraiser")) return "event";
+    if(has("date","dinner","reservation","anniversary","cocktail","drinks")) return "date";
+    if(has("meeting","client","office","standup","interview","presentation","work","conference","zoom","teams","webex")) return "work";
+    return "everyday";
+  }
+
+  function renderAgenda(){
+    const area = $("agendaArea");
+    area.innerHTML = "";
+
+    if(!calCache?.events?.length){
+      area.innerHTML = `<div class="warn">No calendar imported yet. Import an .ics file to auto-detect your day.</div>`;
+      return;
+    }
+
+    const dateStr = $("agendaDate").value;
+    const events = eventsForDate(dateStr);
+    const imported = new Date(calCache.importedAt || Date.now()).toLocaleString();
+
+    const head = document.createElement("div");
+    head.className = "ok";
+    head.textContent = `Calendar imported (${calCache.events.length} events cached). Imported: ${imported}.`;
+    area.appendChild(head);
+
+    if(events.length === 0){
+      const none = document.createElement("div");
+      none.className = "warn";
+      none.textContent = `No events found on ${dateStr}.`;
+      area.appendChild(none);
+      return;
+    }
+
+    const list = document.createElement("div");
+    list.className = "list";
+    list.style.marginTop = "10px";
+
+    events.slice(0,6).forEach(ev=>{
+      const s = new Date(ev.start);
+      const e = new Date(ev.end);
+      const card = document.createElement("div");
+      card.className = "card";
+      card.style.padding = "10px";
+      card.innerHTML = `<b>${escapeHtml(ev.title)}</b>
+        <div class="muted">${s.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} – ${e.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
+        ${ev.location ? `<div class="muted">${escapeHtml(ev.location)}</div>` : ``}`;
+      list.appendChild(card);
+    });
+
+    area.appendChild(list);
+
+    const inferred = inferOccasionFromEvents(events, $("dayNotes").value);
+    const inf = document.createElement("div");
+    inf.className = "muted";
+    inf.style.marginTop = "10px";
+    inf.textContent = `Inferred occasion: ${inferred}`;
+    area.appendChild(inf);
+  }
+
+  // Calendar wiring
+  $("icsFile").onchange = async () => {
+    const f = $("icsFile").files?.[0];
+    if(!f) return;
+    try{
+      const txt = await readFileAsText(f);
+      const events = parseIcs(txt);
+      calCache = { importedAt: new Date().toISOString(), events };
+      saveCal(calCache);
+      renderAgenda();
+    } catch {
+      alert("Could not parse that .ics file.");
+    }
+  };
+  $("clearCal").onclick = () => {
+    if(!confirm("Clear imported calendar?")) return;
+    calCache = null;
+    localStorage.removeItem(CAL_KEY);
+    renderAgenda();
+  };
+  $("scanToday").onclick = () => renderAgenda();
+  $("agendaDate").onchange = () => { renderAgenda(); renderPlannerSelectedDay(ymd($("agendaDate").value)); };
+
+  // ---------- Preferences ----------
+  ["styleVibe","prefFormality","prefColor","avoid"].forEach(k=>{
+    if(prefs[k] != null && $(k)) $(k).value = prefs[k];
+  });
+  ["styleVibe","prefFormality","prefColor","avoid"].forEach(k=>{
+    $(k).onchange = () => {
+      prefs[k] = $(k).value;
+      savePrefs(prefs);
+    };
+  });
+
+  // ---------- Model learning ----------
+  function keyForItem(it){
+    // simple feature key based on category + warmth + formality + color
+    return `${it.cat}|${it.warmth}|${it.formality}|${it.color}|${it.rainOk}`;
+  }
+  function train(items, direction){
+    // direction: "like" or "dislike"
+    items.forEach(it=>{
+      const k = keyForItem(it);
+      const table = (direction === "like") ? model.likes : model.dislikes;
+      table[k] = (table[k] || 0) + 1;
+    });
+    saveModel(model);
+  }
+  function modelBonus(it){
+    const k = keyForItem(it);
+    const like = model.likes?.[k] || 0;
+    const dislike = model.dislikes?.[k] || 0;
+    // keep small so it doesn't dominate
+    return Math.max(-3, Math.min(3, like - dislike));
+  }
+
+  // ---------- Outfit scoring/generation ----------
+  function desiredFormality(occasion){
+    if(occasion==="work") return "smart";
+    if(occasion==="event") return "formal";
+    if(occasion==="date") return prefs.prefFormality || "smart";
+    if(occasion==="gym") return "casual";
+    return prefs.prefFormality || "casual";
+  }
+
+  function scoreItem(it, target){
+    if(it.inRotation === false) return -999; // seasonal storage filter
+
+    let s = 0;
+
+    // weather warmth
+    if(it.warmth === target.warmthTarget) s += 3;
+    else if(it.warmth==="mid" && (target.warmthTarget==="light"||target.warmthTarget==="warm")) s += 1;
+
+    // formality
+    const rank = {casual:0, smart:1, formal:2};
+    const diff = Math.abs((rank[it.formality] ?? 0) - (rank[target.formalityTarget] ?? 0));
+    s += (diff===0 ? 3 : diff===1 ? 1 : -2);
+
+    // color preference
+    if(target.colorPref === "any") s += 1;
+    else if(it.color === target.colorPref) s += 2;
+    else if(target.colorPref==="neutral" && it.color==="dark") s += 1;
+
+    // rain
+    if(target.rainLikely && (it.cat==="shoes" || it.cat==="outerwear")){
+      s += (it.rainOk==="yes") ? 3 : -3;
+    }
+
+    // avoid terms
+    const avoid = (target.avoidText||"").toLowerCase().trim();
+    if(avoid){
+      const hay = (it.name+" "+(it.notes||"")+" "+(it.brand||"")).toLowerCase();
+      avoid.split(",").map(x=>x.trim()).filter(Boolean).forEach(term=>{
+        if(term && hay.includes(term)) s -= 6;
+      });
+    }
+
+    // recent wear penalty
+    if(it.lastWornTs){
+      const days = (Date.now() - it.lastWornTs) / (1000*60*60*24);
+      if(days < 2) s -= 2;
+      else if(days < 7) s -= 1;
+      else s += 1;
+    } else s += 1;
+
+    // vibe keyword heuristics
+    const vibe = (prefs.styleVibe || "classic");
+    const text = (it.name+" "+(it.notes||"")+" "+(it.brand||"")).toLowerCase();
+    if(vibe==="minimal" && (text.includes("plain")||text.includes("simple")||it.color==="neutral")) s += 1;
+    if(vibe==="street" && (text.includes("sneaker")||text.includes("hoodie")||text.includes("cargo"))) s += 1;
+    if(vibe==="classic" && (text.includes("oxford")||text.includes("blazer")||text.includes("loafer"))) s += 1;
+    if(vibe==="outdoorsy" && (text.includes("hiking")||text.includes("shell")||text.includes("trail"))) s += 1;
+    if(vibe==="preppy" && (text.includes("chino")||text.includes("polo")||text.includes("cardigan"))) s += 1;
+    if(vibe==="creative" && (it.color==="bright"||text.includes("pattern")||text.includes("print"))) s += 1;
+
+    // occasion hints
+    if(target.occasion==="gym" && it.formality!=="casual") s -= 2;
+    if(target.occasion==="event" && it.formality==="formal") s += 2;
+    if(target.occasion==="work" && (it.formality==="smart"||it.formality==="formal")) s += 1;
+    if(target.occasion==="outdoors" && (text.includes("hiking")||text.includes("trail")||text.includes("shell")||text.includes("boot"))) s += 2;
+
+    // learned bonus
+    s += modelBonus(it);
+
+    return s;
+  }
+
+  function pickBest(items, target){
+    if(items.length === 0) return null;
+    const scored = items.map(it=>({it, s: scoreItem(it, target)}))
+      .filter(x=>x.s > -900)
+      .sort((a,b)=> b.s - a.s);
+    if(scored.length === 0) return null;
+    const top = scored[0].s;
+    const pool = scored.filter(x => x.s >= top - 1).slice(0,3);
+    return pool[Math.floor(Math.random()*pool.length)].it;
+  }
+
+  function generateOne(target){
+    const byCat = (cat) => closet.filter(x=>x.cat===cat);
+    const outfit = { items: [], notes: [] };
+
+    const dresses = byCat("dress");
+    const useDress = dresses.length>0 && (target.warmthTarget!=="warm") && Math.random()<0.25;
+
+    if(target.occasion==="gym"){
+      const top = pickBest(byCat("top"), target);
+      const bottom = pickBest(byCat("bottom"), target);
+      const shoes = pickBest(byCat("shoes"), target);
+      if(top) outfit.items.push(top);
+      if(bottom) outfit.items.push(bottom);
+      if(shoes) outfit.items.push(shoes);
+      if(target.warmthTarget!=="light" && byCat("outerwear").length){
+        const out = pickBest(byCat("outerwear"), target);
+        if(out) outfit.items.push(out);
+      }
+    } else if(useDress){
+      const dress = pickBest(dresses, target);
+      if(dress) outfit.items.push(dress);
+      const shoes = pickBest(byCat("shoes"), target);
+      if(shoes) outfit.items.push(shoes);
+      if((target.warmthTarget==="warm" || target.rainLikely) && byCat("outerwear").length){
+        const out = pickBest(byCat("outerwear"), target);
+        if(out) outfit.items.push(out);
+      }
+    } else {
+      const top = pickBest(byCat("top"), target);
+      const bottom = pickBest(byCat("bottom"), target);
+      const shoes = pickBest(byCat("shoes"), target);
+      if(top) outfit.items.push(top);
+      if(bottom) outfit.items.push(bottom);
+      if(shoes) outfit.items.push(shoes);
+
+      const needOuterwear = (target.warmthTarget==="warm") || (target.warmthTarget==="mid" && target.rainLikely);
+      if(needOuterwear && byCat("outerwear").length){
+        const out = pickBest(byCat("outerwear"), target);
+        if(out) outfit.items.push(out);
+      }
+    }
+
+    if(byCat("accessory").length && Math.random()<0.4){
+      const acc = pickBest(byCat("accessory"), target);
+      if(acc) outfit.items.push(acc);
+    }
+
+    const cats = outfit.items.map(x=>x.cat);
+    if(!cats.includes("shoes")) outfit.notes.push("Missing shoes in closet.");
+    if(!cats.includes("top") && !cats.includes("dress")) outfit.notes.push("Missing top/dress in closet.");
+    if(!cats.includes("bottom") && !cats.includes("dress")) outfit.notes.push("Missing bottoms in closet.");
+    if((target.warmthTarget==="warm" || target.rainLikely) && !cats.includes("outerwear")) outfit.notes.push("Consider adding an outer layer.");
+
+    return outfit;
+  }
+
+  function wardrobeRecommendations(tempF, rainChance, occasion){
+    const counts = closet.reduce((acc,it)=>{ acc[it.cat]=(acc[it.cat]||0)+1; return acc; }, {});
+    const has = (cat, pred) => closet.some(it=>it.cat===cat && (!pred || pred(it)));
+
+    const recs = [];
+    const minTargets = { top: 6, bottom: 4, shoes: 3, outerwear: 2 };
+    Object.entries(minTargets).forEach(([cat, n])=>{
+      if((counts[cat]||0) < n) recs.push(`Add ${n-(counts[cat]||0)} more ${cat} item(s) for variety.`);
+    });
+
+    const warmthTarget = deriveWarmthTarget(tempF);
+    const rainLikely = rainChance >= 40;
+
+    if(warmthTarget==="warm"){
+      if(!has("outerwear", it => it.warmth==="warm")) recs.push("Warm outerwear staple: coat/parka/overcoat you’ll actually wear.");
+      if(!has("shoes", it => it.rainOk==="yes")) recs.push("Weatherproof shoes/boots for wet days.");
+    }
+    if(warmthTarget==="light"){
+      if(!has("top", it => it.warmth==="light")) recs.push("Hot-weather tops: breathable tees/linen.");
+      if(!has("bottom", it => it.warmth==="light")) recs.push("Light bottoms: shorts or lightweight trousers.");
+    }
+    if(rainLikely){
+      if(!has("outerwear", it => it.rainOk==="yes")) recs.push("Rain layer: packable rain jacket/shell.");
+    }
+    if(occasion==="work"){
+      if(!has("top", it => it.formality!=="casual")) recs.push("Work tops: 1–2 smart-casual shirts/blouses.");
+      if(!has("shoes", it => it.formality!=="casual")) recs.push("Work shoes: loafers/derbies/clean flats.");
+    }
+
+    // make it smarter: prioritize gaps that match liked outfits
+    return [...new Set(recs)].slice(0,8);
+  }
+
+  // ---------- Outfit history / saving / rating ----------
+  function makeOutfitRecord(outfit, ctx, flags={}){
+    const itemIds = outfit.items.map(it=>it.id);
+    const id = crypto.randomUUID();
+    return {
+      id,
+      createdAt: Date.now(),
+      date: ctx.dateStr,
+      occasion: ctx.occasion,
+      tempF: ctx.tempF,
+      rainChance: ctx.rainChance,
+      warmthTarget: ctx.warmthTarget,
+      formalityTarget: ctx.formalityTarget,
+      notes: (ctx.notes || "").slice(0,200),
+      itemIds,
+      saved: !!flags.saved,
+      planned: !!flags.planned,
+      wornAt: null,
+      rating: null, // 1-5
+      liked: null,  // true/false
+      confidence: computeConfidenceScore(outfit, ctx)
+    };
+  }
+
+  function findItemById(id){ return closet.find(x=>x.id===id) || null; }
+
+  function computeConfidenceScore(outfit, ctx){
+    // Simple 0–100 score: weather fit + formality match + color cohesion + rain readiness
+    let score = 55;
+
+    // weather fit
+    outfit.items.forEach(it=>{
+      if(it.warmth === ctx.warmthTarget) score += 3;
+      if(ctx.rainChance >= 40 && (it.cat==="shoes"||it.cat==="outerwear") && it.rainOk==="yes") score += 3;
+      if(ctx.rainChance >= 40 && (it.cat==="shoes"||it.cat==="outerwear") && it.rainOk!=="yes") score -= 4;
+    });
+
+    // formality match
+    const rank = {casual:0, smart:1, formal:2};
+    const target = rank[ctx.formalityTarget] ?? 0;
+    const avg = outfit.items.reduce((a,it)=>a+(rank[it.formality]??0),0) / Math.max(1,outfit.items.length);
+    score += Math.max(-10, 10 - Math.abs(avg - target)*8);
+
+    // color cohesion: reward if most items are neutral/dark or same family
+    const colors = outfit.items.map(it=>it.color);
+    const counts = colors.reduce((a,c)=>{a[c]=(a[c]||0)+1; return a;},{});
+    const topCount = Math.max(...Object.values(counts||{x:1}));
+    score += (topCount >= 3) ? 8 : (topCount === 2 ? 4 : 0);
+    if(colors.filter(c=>c==="bright").length >= 2) score -= 3;
+
+    // clamp
+    score = Math.max(0, Math.min(100, Math.round(score)));
+    return score;
+  }
+
+  async function renderOutfits(outfitsToShow, ctx){
+    const area = $("outfitArea");
+    const rec  = $("recArea");
+    area.innerHTML = "";
+    rec.innerHTML = "";
+
+    const recs = wardrobeRecommendations(ctx.tempF, ctx.rainChance, ctx.occasion);
+    if(recs.length){
+      const box = document.createElement("div");
+      box.className = "outfit";
+      box.innerHTML = `<h3>Wardrobe recommendations</h3><ul>${recs.map(x=>`<li>${escapeHtml(x)}</li>`).join("")}</ul>`;
+      rec.appendChild(box);
+    }
+
+    for(let i=0;i<outfitsToShow.length;i++){
+      const o = outfitsToShow[i];
+      const box = document.createElement("div");
+      box.className = "outfit";
+
+      const title = document.createElement("h3");
+      title.textContent = outfitsToShow.length>1 ? `Outfit option ${i+1}` : `Your outfit`;
+      box.appendChild(title);
+
+      const meta = document.createElement("div");
+      meta.className = "muted";
+      meta.textContent = `Occasion: ${ctx.occasion} • Warmth: ${ctx.warmthTarget} • Rain: ${ctx.rainChance}% • Confidence: ${computeConfidenceScore(o, ctx)}/100`;
+      box.appendChild(meta);
+
+      const ul = document.createElement("ul");
+      for(const it of o.items){
+        const li = document.createElement("li");
+        const wrap = document.createElement("div");
+        wrap.style.display="flex";
+        wrap.style.gap="10px";
+        wrap.style.alignItems="center";
+
+        const img = document.createElement("img");
+        img.className = "thumb";
+        img.alt = it.name;
+
+        if(it.photoId){
+          try{
+            const url = await getPhotoURL(it.photoId);
+            img.src = url || "";
+          } catch {}
+        }
+
+        const txt = document.createElement("div");
+        txt.innerHTML = `<b>${escapeHtml(it.name)}</b> <span class="muted">(${it.cat})</span>
+          <div class="tiny">${it.brand ? escapeHtml(it.brand)+" • " : ""}${it.notes ? escapeHtml(it.notes) : ""}</div>`;
+
+        wrap.appendChild(img);
+        wrap.appendChild(txt);
+        li.appendChild(wrap);
+        ul.appendChild(li);
+      }
+      box.appendChild(ul);
+
+      if(o.notes?.length){
+        const note = document.createElement("div");
+        note.className = "warn";
+        note.style.marginTop = "10px";
+        note.innerHTML = `<b>Notes:</b> ${o.notes.map(escapeHtml).join(" ")}`;
+        box.appendChild(note);
+      }
+
+      const btnRow = document.createElement("div");
+      btnRow.className = "footer";
+
+      const saveBtn = document.createElement("button");
+      saveBtn.className = "secondary";
+      saveBtn.textContent = "❤️ Save outfit";
+      saveBtn.onclick = () => {
+        const rec = makeOutfitRecord(o, ctx, { saved:true });
+        outfits.unshift(rec);
+        saveOutfits(outfits);
+        model.stats.saved = (model.stats.saved||0) + 1;
+        saveModel(model);
+        alert("Saved!");
+        renderHistory();
+      };
+
+      const likeBtn = document.createElement("button");
+      likeBtn.className = "secondary";
+      likeBtn.textContent = "👍 Like";
+      likeBtn.onclick = () => {
+        train(o.items, "like");
+        alert("Got it — I’ll lean toward these kinds of items.");
+      };
+
+      const dislikeBtn = document.createElement("button");
+      dislikeBtn.className = "secondary";
+      dislikeBtn.textContent = "👎 Dislike";
+      dislikeBtn.onclick = () => {
+        train(o.items, "dislike");
+        alert("Got it — I’ll avoid these kinds of picks.");
+      };
+
+      const wornBtn = document.createElement("button");
+      wornBtn.className = "secondary";
+      wornBtn.textContent = "Mark worn";
+      wornBtn.onclick = () => {
+        const now = Date.now();
+        o.items.forEach(it => it.lastWornTs = now);
+        saveItems(closet);
+        model.stats.worn = (model.stats.worn||0) + 1;
+        saveModel(model);
+        renderCloset();
+        alert("Marked worn.");
+        renderInsights();
+      };
+
+      btnRow.appendChild(saveBtn);
+      btnRow.appendChild(likeBtn);
+      btnRow.appendChild(dislikeBtn);
+      btnRow.appendChild(wornBtn);
+
+      box.appendChild(btnRow);
+      area.appendChild(box);
+    }
+  }
+
+  // ---------- Planner ----------
+  let plannerSelectedDay = null;
+
+  function monthStart(date){
+    return new Date(date.getFullYear(), date.getMonth(), 1);
+  }
+  function monthEnd(date){
+    return new Date(date.getFullYear(), date.getMonth()+1, 0);
+  }
+
+  function renderPlanner(){
+    // initialize month picker
+    const now = new Date();
+    if(!$("planMonth").value){
+      $("planMonth").value = now.toISOString().slice(0,7);
+    }
+    const [Y,M] = $("planMonth").value.split("-").map(Number);
+    const base = new Date(Y, M-1, 1);
+    const start = monthStart(base);
+    const end = monthEnd(base);
+
+    const grid = $("calGrid");
+    grid.innerHTML = "";
+
+    const firstDow = start.getDay(); // 0 Sunday
+    const daysInMonth = end.getDate();
+
+    // leading blanks
+    for(let i=0;i<firstDow;i++){
+      const cell = document.createElement("div");
+      cell.className = "calCell";
+      cell.style.opacity = "0.35";
+      cell.innerHTML = `<div class="dateNum"> </div>`;
+      grid.appendChild(cell);
+    }
+
+    for(let day=1; day<=daysInMonth; day++){
+      const d = new Date(Y, M-1, day);
+      const key = ymd(d);
+      const plannedId = plans[key] || null;
+
+      const cell = document.createElement("div");
+      cell.className = "calCell";
+      cell.onclick = () => { plannerSelectedDay = key; renderPlannerSelectedDay(key); };
+
+      const top = document.createElement("div");
+      top.style.display="flex";
+      top.style.justifyContent="space-between";
+      top.style.alignItems="center";
+      top.innerHTML = `<div class="dateNum">${day}</div><div class="muted">${key===ymd(new Date())?"Today":""}</div>`;
+      cell.appendChild(top);
+
+      const planned = document.createElement("div");
+      planned.className = "planned";
+      if(plannedId){
+        const o = outfits.find(x=>x.id===plannedId);
+        planned.innerHTML = `<div class="pill">Planned</div><div><b>${escapeHtml(o?.occasion || "Outfit")}</b> <span class="muted">${o?.confidence != null ? o.confidence+"/100" : ""}</span></div>`;
+      }else{
+        planned.innerHTML = `<div class="muted">No plan</div>`;
+      }
+      cell.appendChild(planned);
+
+      const btn = document.createElement("button");
+      btn.className = "secondary";
+      btn.textContent = plannedId ? "Change" : "Plan";
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        plannerSelectedDay = key;
+        renderPlannerSelectedDay(key, true);
+      };
+      cell.appendChild(btn);
+
+      grid.appendChild(cell);
+    }
+
+    // if selected day not in month, clear selection
+    if(plannerSelectedDay && plannerSelectedDay.slice(0,7) !== $("planMonth").value){
+      plannerSelectedDay = null;
+    }
+    renderPlannerSelectedDay(plannerSelectedDay);
+  }
+
+  function renderPlannerSelectedDay(dateStr, openPicker=false){
+    const label = $("planSelectedLabel");
+    const area = $("planSelectedArea");
+    area.innerHTML = "";
+
+    if(!dateStr){
+      label.textContent = "Select a day in the calendar.";
+      return;
+    }
+    label.textContent = `Selected: ${dateStr}`;
+
+    const plannedId = plans[dateStr] || null;
+    if(plannedId){
+      const o = outfits.find(x=>x.id===plannedId);
+      const card = document.createElement("div");
+      card.className = "outfit";
+      card.innerHTML = `<h3>Planned outfit</h3>
+        <div class="muted">${escapeHtml(o?.occasion || "Outfit")} • Confidence: ${(o?.confidence ?? "—")}/100</div>
+        <div class="footer">
+          <button class="secondary" id="planView">View</button>
+          <button class="secondary" id="planRemove">Remove plan</button>
+        </div>`;
+      area.appendChild(card);
+
+      card.querySelector("#planView").onclick = () => {
+        showPage("history");
+        $("histFilter").value = "planned";
+        renderHistory();
+      };
+      card.querySelector("#planRemove").onclick = () => {
+        delete plans[dateStr];
+        savePlans(plans);
+        renderPlanner();
+      };
+    } else {
+      const info = document.createElement("div");
+      info.className = "warn";
+      info.textContent = "No outfit planned for this day yet.";
+      area.appendChild(info);
+    }
+
+    // Picker list (saved outfits)
+    const picker = document.createElement("div");
+    picker.style.marginTop = "12px";
+    picker.className = "card";
+    picker.style.border = "1px solid var(--border)";
+    picker.style.borderRadius = "12px";
+    picker.style.padding = "10px";
+
+    const savedOnly = outfits.filter(x=>x.saved).slice(0,30);
+    picker.innerHTML = `<b>Pick from saved outfits</b><div class="muted">Tap one to plan it for ${dateStr}.</div>`;
+
+    if(savedOnly.length === 0){
+      const w = document.createElement("div");
+      w.className = "warn";
+      w.style.marginTop = "10px";
+      w.textContent = "No saved outfits yet. Generate an outfit on Today and tap ❤️ Save.";
+      picker.appendChild(w);
+    } else {
+      const list = document.createElement("div");
+      list.className = "list";
+      list.style.marginTop = "10px";
+
+      savedOnly.forEach(o=>{
+        const row = document.createElement("div");
+        row.className = "item";
+        row.style.alignItems="center";
+
+        const left = document.createElement("div");
+        left.innerHTML = `<b>${escapeHtml(o.occasion || "Outfit")}</b>
+          <small>${new Date(o.createdAt).toLocaleDateString()} • Confidence ${o.confidence}/100</small>`;
+
+        const right = document.createElement("div");
+        const btn = document.createElement("button");
+        btn.className = "secondary small";
+        btn.textContent = "Plan this";
+        btn.onclick = () => {
+          plans[dateStr] = o.id;
+          savePlans(plans);
+          // mark outfit as planned
+          const idx = outfits.findIndex(x=>x.id===o.id);
+          if(idx>=0){ outfits[idx].planned = true; saveOutfits(outfits); }
+          renderPlanner();
+        };
+        right.appendChild(btn);
+
+        row.appendChild(left);
+        row.appendChild(right);
+        list.appendChild(row);
+      });
+
+      picker.appendChild(list);
+    }
+
+    if(openPicker) area.appendChild(picker);
+  }
+
+  $("planMonth").onchange = () => renderPlanner();
+  $("planClearMonth").onclick = () => {
+    const ymv = $("planMonth").value;
+    if(!confirm(`Clear all plans for ${ymv}?`)) return;
+    Object.keys(plans).forEach(k=>{
+      if(k.slice(0,7) === ymv) delete plans[k];
+    });
+    savePlans(plans);
+    renderPlanner();
+  };
+
+  // Plan today button
+  $("planToday").onclick = () => {
+    const dateStr = $("agendaDate").value || ymd(new Date());
+    // if there is a most recently generated outfit saved in UI state, plan that
+    const last = window.__lastGeneratedOutfitRecordId || null;
+    if(last){
+      plans[dateStr] = last;
+      savePlans(plans);
+      alert(`Planned today (${dateStr}).`);
+      showPage("planner");
+      plannerSelectedDay = dateStr;
+      renderPlanner();
+      renderPlannerSelectedDay(dateStr);
+      return;
+    }
+    alert("Generate an outfit first (then it can be planned).");
+  };
+
+  // ---------- History ----------
+  function outfitToItems(o){
+    return (o.itemIds || []).map(id=>findItemById(id)).filter(Boolean);
+  }
+
+  async function renderHistory(){
+    const filter = $("histFilter").value;
+    const q = ($("histSearch").value || "").toLowerCase().trim();
+    const area = $("historyArea");
+    area.innerHTML = "";
+
+    let list = outfits.slice();
+    if(filter==="saved") list = list.filter(x=>x.saved);
+    if(filter==="planned") list = list.filter(x=>x.planned || Object.values(plans).includes(x.id));
+    if(filter==="rated") list = list.filter(x=>Number.isFinite(x.rating));
+    if(filter==="liked") list = list.filter(x=>x.liked===true);
+
+    if(q){
+      list = list.filter(o=>{
+        const hay = `${o.occasion||""} ${o.notes||""}`.toLowerCase();
+        return hay.includes(q);
+      });
+    }
+
+    if(list.length === 0){
+      area.innerHTML = `<div class="warn">No outfits match your filters yet. Generate some on Today and ❤️ Save the ones you like.</div>`;
+      return;
+    }
+
+    for(const o of list.slice(0,60)){
+      const card = document.createElement("div");
+      card.className = "galleryCard";
+
+      const items = outfitToItems(o);
+      const thumbs = document.createElement("div");
+      thumbs.className = "galleryThumbs";
+
+      for(const it of items.slice(0,6)){
+        const img = document.createElement("img");
+        img.className = "thumb";
+        img.alt = it.name;
+        if(it.photoId){
+          try{
+            const url = await getPhotoURL(it.photoId);
+            img.src = url || "";
+          } catch {}
+        }
+        thumbs.appendChild(img);
+      }
+
+      card.innerHTML = `
+        <b>${escapeHtml(o.occasion || "Outfit")}</b>
+        <div class="muted">${new Date(o.createdAt).toLocaleString()} • ${o.date || ""} • Confidence ${o.confidence}/100</div>
+        <div class="kpi" style="margin-top:6px">
+          ${o.saved ? `<span class="pill">saved</span>` : ``}
+          ${o.planned || Object.values(plans).includes(o.id) ? `<span class="pill">planned</span>` : ``}
+          ${Number.isFinite(o.rating) ? `<span class="pill">rating: ${o.rating}/5</span>` : ``}
+          ${o.liked===true ? `<span class="pill">liked</span>` : o.liked===false ? `<span class="pill">disliked</span>` : ``}
+        </div>
+      `;
+      card.appendChild(thumbs);
+
+      const actions = document.createElement("div");
+      actions.className = "footer";
+      actions.style.marginTop = "10px";
+
+      const like = document.createElement("button");
+      like.className = "secondary small";
+      like.textContent = "👍 Like";
+      like.onclick = () => {
+        o.liked = true;
+        saveOutfits(outfits);
+        train(items, "like");
+        renderHistory();
+      };
+
+      const dislike = document.createElement("button");
+      dislike.className = "secondary small";
+      dislike.textContent = "👎 Dislike";
+      dislike.onclick = () => {
+        o.liked = false;
+        saveOutfits(outfits);
+        train(items, "dislike");
+        renderHistory();
+      };
+
+      const rateWrap = document.createElement("div");
+      rateWrap.className = "stars";
+      rateWrap.innerHTML = `<span class="muted">Rate:</span>`;
+      for(let r=1;r<=5;r++){
+        const b = document.createElement("button");
+        b.className = "secondary small";
+        b.textContent = `${r}★`;
+        b.onclick = () => {
+          o.rating = r;
+          saveOutfits(outfits);
+          renderHistory();
+        };
+        rateWrap.appendChild(b);
+      }
+
+      const del = document.createElement("button");
+      del.className = "danger small";
+      del.textContent = "Delete";
+      del.onclick = () => {
+        if(!confirm("Delete this outfit record?")) return;
+        outfits = outfits.filter(x=>x.id!==o.id);
+        saveOutfits(outfits);
+        // remove from plans if used
+        Object.keys(plans).forEach(k=>{ if(plans[k]===o.id) delete plans[k]; });
+        savePlans(plans);
+        renderHistory();
+        renderPlanner();
+      };
+
+      actions.appendChild(like);
+      actions.appendChild(dislike);
+      actions.appendChild(rateWrap);
+      actions.appendChild(del);
+      card.appendChild(actions);
+
+      area.appendChild(card);
+    }
+  }
+  $("histFilter").onchange = () => renderHistory();
+  $("histSearch").oninput = () => renderHistory();
+
+  $("exportOutfits").onclick = () => {
+    const payload = { exportedAt: new Date().toISOString(), outfits };
+    const blob = new Blob([JSON.stringify(payload)], {type:"application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "outfits-backup.json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  $("recoRebuild").onclick = () => {
+    // quick rebuild: resets learned dislikes/likes but keeps stats
+    if(!confirm("Reset learned likes/dislikes? (Your closet + outfits remain.)")) return;
+    const stats = model.stats || {};
+    model = { likes:{}, dislikes:{}, stats };
+    saveModel(model);
+    alert("Reset complete.");
+  };
+
+  // ---------- Insights ----------
+  function renderInsights(){
+    // analytics
+    const area = $("analyticsArea");
+    area.innerHTML = "";
+
+    if(closet.length === 0){
+      area.innerHTML = `<div class="warn">Add clothing in Library to see analytics.</div>`;
+      $("capsuleArea").innerHTML = "";
+      $("scoresArea").innerHTML = "";
+      return;
+    }
+
+    // compute wears (based on lastWornTs + outfit history as proxy)
+    const wearCount = {};
+    outfits.forEach(o=>{
+      (o.itemIds||[]).forEach(id=> wearCount[id] = (wearCount[id]||0) + 1);
+    });
+
+    const itemsWithWear = closet.map(it=>{
+      const wears = wearCount[it.id] || 0;
+      const price = Number(it.price);
+      const cpw = (Number.isFinite(price) && wears>0) ? (price/wears) : null;
+      return { it, wears, cpw };
+    }).sort((a,b)=> (b.wears - a.wears));
+
+    const most = itemsWithWear.slice(0,5);
+    const least = itemsWithWear.slice().sort((a,b)=> (a.wears - b.wears)).slice(0,5);
+    const cpwBest = itemsWithWear
+      .filter(x=>x.cpw != null)
+      .sort((a,b)=> a.cpw - b.cpw)
+      .slice(0,5);
+
+    const block = document.createElement("div");
+    block.className = "list";
+
+    function listBlock(title, rows, fmt){
+      const c = document.createElement("div");
+      c.className = "outfit";
+      c.innerHTML = `<h3>${escapeHtml(title)}</h3>` + (rows.length ? `<ul>${rows.map(fmt).join("")}</ul>` : `<div class="muted">Not enough data yet.</div>`);
+      return c;
+    }
+
+    block.appendChild(listBlock("Most worn", most, x => `<li>${escapeHtml(x.it.name)} <span class="muted">(${x.wears} wear(s))</span></li>`));
+    block.appendChild(listBlock("Least worn", least, x => `<li>${escapeHtml(x.it.name)} <span class="muted">(${x.wears} wear(s))</span></li>`));
+    block.appendChild(listBlock("Best cost-per-wear", cpwBest, x => `<li>${escapeHtml(x.it.name)} <span class="muted">(${fmtMoney(x.it.price)} / ${x.wears} = ${fmtMoney(x.cpw)})</span></li>`));
+
+    area.appendChild(block);
+
+    // scores
+    const scoresArea = $("scoresArea");
+    scoresArea.innerHTML = "";
+    const recent = outfits.slice(0,8);
+    if(recent.length === 0){
+      scoresArea.innerHTML = `<div class="warn">Generate and save a few outfits to see scores here.</div>`;
+    } else {
+      const ul = document.createElement("div");
+      ul.className = "list";
+      recent.forEach(o=>{
+        const d = document.createElement("div");
+        d.className = "item";
+        d.innerHTML = `<div>
+          <b>${escapeHtml(o.occasion || "Outfit")}</b>
+          <small>${new Date(o.createdAt).toLocaleDateString()} • Confidence ${o.confidence}/100</small>
+        </div>`;
+        ul.appendChild(d);
+      });
+      scoresArea.appendChild(ul);
+    }
+  }
+
+  $("buildCapsule").onclick = () => {
+    const area = $("capsuleArea");
+    area.innerHTML = "";
+
+    if(closet.length === 0){
+      area.innerHTML = `<div class="warn">Add clothing in Library first.</div>`;
+      return;
+    }
+
+    // Pick versatile items: those appearing in liked/saved outfits the most
+    const score = {};
+    outfits.filter(o=>o.saved || o.liked===true).forEach(o=>{
+      (o.itemIds||[]).forEach(id=> score[id]=(score[id]||0)+1);
+    });
+
+    const ranked = closet
+      .filter(it=>it.inRotation !== false)
+      .map(it=>({it, s:score[it.id]||0}))
+      .sort((a,b)=> b.s - a.s);
+
+    const capsule = ranked.slice(0,10).map(x=>x.it);
+
+    // Missing essentials heuristic
+    const cats = capsule.map(x=>x.cat);
+    const missing = [];
+    const need = { top:3, bottom:2, shoes:2, outerwear:1 };
+    Object.entries(need).forEach(([cat,n])=>{
+      const have = capsule.filter(x=>x.cat===cat).length;
+      if(have < n) missing.push(`Add ${n-have} more ${cat} staple(s) for a balanced capsule.`);
+    });
+
+    const box = document.createElement("div");
+    box.className = "outfit";
+    box.innerHTML = `<h3>Suggested capsule (top 10)</h3>
+      <ul>${capsule.map(it=>`<li>${escapeHtml(it.name)} <span class="muted">(${it.cat})</span></li>`).join("")}</ul>
+      ${missing.length ? `<hr><b>Missing essentials</b><ul>${missing.map(m=>`<li>${escapeHtml(m)}</li>`).join("")}</ul>` : `<div class="ok" style="margin-top:10px;">Looks balanced 🎉</div>`}
+    `;
+    area.appendChild(box);
+  };
+
+  // ---------- Shop ----------
+  function smartShopSuggestions(){
+    // Combine gap analysis with what you like wearing
+    const tempF = Number($("manualTemp").value || 70);
+    const rainChance = Number($("manualRain").value || 0);
+    const occasion = $("occasion").value === "auto" ? "everyday" : $("occasion").value;
+
+    const recs = wardrobeRecommendations(tempF, rainChance, occasion);
+
+    // add “upgrade” suggestions based on least-worn or missing rainOk
+    const hasRainOuter = closet.some(it=>it.cat==="outerwear" && it.rainOk==="yes" && it.inRotation!==false);
+    if(rainChance >= 40 && !hasRainOuter) recs.unshift("Upgrade: A rain shell you actually like (packable, hood, neutral color).");
+
+    // if lots of dark, suggest a neutral/bright accent
+    const colors = closet.map(x=>x.color);
+    const darkCount = colors.filter(c=>c==="dark").length;
+    const brightCount = colors.filter(c=>c==="bright").length;
+    if(darkCount > brightCount*2) recs.push("Balance: One bright/interesting top or accessory that matches your neutrals.");
+
+    return [...new Set(recs)].slice(0,10);
+  }
+
+  function renderShop(){
+    const recArea = $("shopRecsArea");
+    recArea.innerHTML = "";
+    const recs = smartShopSuggestions();
+    if(recs.length===0){
+      recArea.innerHTML = `<div class="warn">Add more clothes or save a few outfits to unlock smarter suggestions.</div>`;
+    } else {
+      const box = document.createElement("div");
+      box.className = "outfit";
+      box.innerHTML = `<h3>Suggestions</h3><ul>${recs.map(x=>`<li>${escapeHtml(x)}</li>`).join("")}</ul>`;
+      recArea.appendChild(box);
+    }
+    renderWishlist();
+  }
+
+  $("refreshShop").onclick = () => renderShop();
+
+  function renderWishlist(){
+    const area = $("wishlistArea");
+    area.innerHTML = "";
+    if(wishlist.length === 0){
+      area.innerHTML = `<div class="warn">Wishlist is empty. Add items you’re considering buying.</div>`;
+      return;
+    }
+    const list = document.createElement("div");
+    list.className = "list";
+    wishlist.slice().reverse().forEach(w=>{
+      const row = document.createElement("div");
+      row.className = "item";
+      const left = document.createElement("div");
+      left.innerHTML = `<b>${escapeHtml(w.name)}</b>
+        <small>${escapeHtml(w.cat)} • ${w.budget ? "Budget "+fmtMoney(w.budget) : "No budget"} ${w.purchased ? "• ✅ purchased" : ""}</small>
+        <small>${w.notes ? escapeHtml(w.notes) : ""}</small>
+        ${w.link ? `<small><a href="${escapeHtml(w.link)}" target="_blank" rel="noopener">Open link</a></small>` : ""}`;
+      const right = document.createElement("div");
+
+      const toggle = document.createElement("button");
+      toggle.className = "secondary small";
+      toggle.textContent = w.purchased ? "Unmark" : "Mark purchased";
+      toggle.onclick = () => {
+        w.purchased = !w.purchased;
+        saveWish(wishlist);
+        renderWishlist();
+      };
+
+      const del = document.createElement("button");
+      del.className = "danger small";
+      del.textContent = "Delete";
+      del.onclick = () => {
+        wishlist = wishlist.filter(x=>x.id!==w.id);
+        saveWish(wishlist);
+        renderWishlist();
+      };
+
+      right.appendChild(toggle);
+      right.appendChild(document.createElement("div")).style.height="6px";
+      right.appendChild(del);
+
+      row.appendChild(left);
+      row.appendChild(right);
+      list.appendChild(row);
+    });
+    area.appendChild(list);
+  }
+
+  $("wishAdd").onclick = () => {
+    const name = ($("wishName").value || "").trim();
+    if(!name) return alert("Enter a wishlist item name.");
+    const w = {
+      id: crypto.randomUUID(),
+      name,
+      cat: $("wishCat").value,
+      link: ($("wishLink").value || "").trim(),
+      budget: ($("wishBudget").value || "").trim(),
+      notes: ($("wishNotes").value || "").trim(),
+      purchased: false,
+      createdAt: Date.now()
+    };
+    wishlist.push(w);
+    saveWish(wishlist);
+    $("wishName").value = "";
+    $("wishLink").value = "";
+    $("wishBudget").value = "";
+    $("wishNotes").value = "";
+    renderWishlist();
+  };
+
+  $("wishClear").onclick = () => {
+    wishlist = wishlist.filter(x=>!x.purchased);
+    saveWish(wishlist);
+    renderWishlist();
+  };
+
+  // ---------- Trips ----------
+  function packingList(days, occasion, tempF, rainChance, notes){
+    const warmthTarget = deriveWarmthTarget(tempF);
+    const rainLikely = rainChance >= 40;
+
+    // simple packing ratios
+    const tops = Math.min(Math.max(3, Math.ceil(days * 0.75)), 8);
+    const bottoms = Math.min(Math.max(2, Math.ceil(days * 0.4)), 5);
+    const socks = Math.min(Math.max(4, days + 1), 12);
+    const underwear = Math.min(Math.max(4, days + 1), 14);
+    const shoes = (occasion==="outdoors" || rainLikely) ? 2 : 1;
+
+    const extras = [];
+    if(warmthTarget==="warm") extras.push("Warm layer (sweater/fleece)");
+    if(rainLikely) extras.push("Rain jacket/shell + umbrella");
+    if(occasion==="work") extras.push("1–2 smart tops + work shoes");
+    if(occasion==="event") extras.push("Formal outfit + nicer shoes");
+    if(occasion==="gym") extras.push("Workout set + trainers");
+    if(notes?.toLowerCase().includes("walk")) extras.push("Comfort-first shoes + blister kit");
+
+    return {
+      summary: `For ${days} days • ${warmthTarget} weather • rain ${rainChance}% • ${occasion} trip`,
+      items: [
+        `${tops} tops`,
+        `${bottoms} bottoms`,
+        `${shoes} pair(s) of shoes`,
+        `1 outerwear layer`,
+        `${socks} pairs socks`,
+        `${underwear} underwear`,
+        `sleepwear`,
+        `toiletries`
+      ],
+      extras
+    };
+  }
+
+  $("tripUseTodayWeather").onclick = () => {
+    const t = $("manualTemp").value;
+    const r = $("manualRain").value;
+    if(t) $("tripTemp").value = t;
+    if(r) $("tripRain").value = r;
+  };
+
+  $("tripGenerate").onclick = () => {
+    const days = Math.max(1, Number($("tripDays").value || 1));
+    const occ = $("tripOccasion").value;
+    const tempF = Number($("tripTemp").value);
+    const rainChance = Number($("tripRain").value || 0);
+    if(!Number.isFinite(tempF)) return alert("Enter expected trip temperature.");
+    const notes = $("tripNotes").value || "";
+
+    const out = packingList(days, occ, tempF, rainChance, notes);
+    const div = document.createElement("div");
+    div.className = "outfit";
+    div.innerHTML = `<h3>Packing list</h3>
+      <div class="muted">${escapeHtml(out.summary)}</div>
+      <ul>${out.items.map(x=>`<li>${escapeHtml(x)}</li>`).join("")}</ul>
+      ${out.extras.length ? `<hr><b>Extras</b><ul>${out.extras.map(x=>`<li>${escapeHtml(x)}</li>`).join("")}</ul>` : ``}
+    `;
+    $("tripOutput").innerHTML = "";
+    $("tripOutput").appendChild(div);
+  };
+
+  $("tripVersatile").onclick = () => {
+    const area = $("tripVersatileArea");
+    area.innerHTML = "";
+
+    if(closet.length === 0){
+      area.innerHTML = `<div class="warn">Add clothing first.</div>`;
+      return;
+    }
+
+    // versatile = appears in saved/liked outfits often
+    const score = {};
+    outfits.filter(o=>o.saved || o.liked===true).forEach(o=>{
+      (o.itemIds||[]).forEach(id=> score[id]=(score[id]||0)+1);
+    });
+    const ranked = closet
+      .filter(it=>it.inRotation !== false)
+      .map(it=>({it, s: score[it.id]||0}))
+      .sort((a,b)=> b.s - a.s)
+      .slice(0,12);
+
+    const box = document.createElement("div");
+    box.className = "outfit";
+    box.innerHTML = `<h3>Versatile items</h3><ul>${ranked.map(x=>`<li>${escapeHtml(x.it.name)} <span class="muted">(${x.it.cat} • score ${x.s})</span></li>`).join("")}</ul>`;
+    area.appendChild(box);
+  };
+
+  // ---------- Closet rendering + Library filters ----------
+  function catLabel(cat){
+    return ({
+      top:"Tops", bottom:"Bottoms", shoes:"Shoes", outerwear:"Outerwear",
+      dress:"Dresses / One-piece", accessory:"Accessories"
+    }[cat] || cat);
+  }
+
+  async function renderCloset(){
+    const list = $("closetList");
+    const stat = $("closetStats");
+    list.innerHTML = "";
+    stat.innerHTML = "";
+
+    const q = ($("libSearch").value || "").toLowerCase().trim();
+    const fCat = $("libFilterCat").value;
+    const fRot = $("libFilterRotation").value;
+
+    const filtered = closet.filter(it=>{
+      const hay = `${it.name||""} ${it.notes||""} ${it.brand||""}`.toLowerCase();
+      if(q && !hay.includes(q)) return false;
+      if(fCat !== "all" && it.cat !== fCat) return false;
+      const inRot = (it.inRotation !== false);
+      if(fRot === "active" && !inRot) return false;
+      if(fRot === "storage" && inRot) return false;
+      return true;
+    });
+
+    const counts = filtered.reduce((acc, it)=>{ acc[it.cat]=(acc[it.cat]||0)+1; return acc; }, {});
+    const order = getCatOrder();
+
+    order.forEach(cat=>{
+      const n = counts[cat]||0;
+      const span = document.createElement("span");
+      span.className = "pill";
+      span.textContent = `${cat}: ${n}`;
+      stat.appendChild(span);
+    });
+    const total = document.createElement("span");
+    total.className = "pill";
+    total.textContent = `shown: ${filtered.length} / total: ${closet.length}`;
+    stat.appendChild(total);
+
+    if(filtered.length === 0){
+      const empty = document.createElement("div");
+      empty.className = "warn";
+      empty.textContent = closet.length ? "No items match your filters." : "Your closet is empty. Add items above or seed a starter closet.";
+      list.appendChild(empty);
+      return;
+    }
+
+    const grouped = filtered.reduce((acc, it)=>{ (acc[it.cat] ||= []).push(it); return acc; }, {});
+
+    for(const cat of order){
+      const items = (grouped[cat] || []).slice().sort((a,b)=> (a.name||"").localeCompare(b.name||""));
+      if(items.length === 0) continue;
+
+      const header = document.createElement("div");
+      header.className = "sectionHeader";
+      header.innerHTML = `<div class="title">${escapeHtml(catLabel(cat))}</div><div class="muted">${items.length} item(s)</div>`;
+      list.appendChild(header);
+
+      for(const it of items){
+        const row = document.createElement("div");
+        row.className = "item";
+
+        const left = document.createElement("div");
+        left.className = "itemLeft";
+
+        const img = document.createElement("img");
+        img.className = "thumb";
+        img.alt = it.name;
+        if(it.photoId){
+          try{
+            const url = await getPhotoURL(it.photoId);
+            img.src = url || "";
+          } catch {}
+        }
+        left.appendChild(img);
+
+        const info = document.createElement("div");
+        const priceTxt = (it.price != null && it.price !== "") ? ` • ${fmtMoney(it.price)}` : "";
+        const rotTxt = (it.inRotation === false) ? ` • <span class="pill">storage</span>` : "";
+        info.innerHTML = `<b>${escapeHtml(it.name)}</b>
+          <small>
+            <span class="pill">${it.warmth}</span>
+            <span class="pill">${it.formality}</span>
+            <span class="pill">${it.color}</span>
+            ${it.rainOk==="yes" ? `<span class="pill">rain-ok</span>` : ``}
+            ${rotTxt}
+          </small>
+          <small>${it.brand ? escapeHtml(it.brand) : ""}${priceTxt}</small>
+          <small>${it.notes ? escapeHtml(it.notes) : ""}</small>`;
+        left.appendChild(info);
+
+        const right = document.createElement("div");
+
+        const toggleRot = document.createElement("button");
+        toggleRot.className = "secondary small";
+        toggleRot.textContent = (it.inRotation === false) ? "Move to rotation" : "Move to storage";
+        toggleRot.onclick = () => {
+          it.inRotation = !(it.inRotation === false);
+          saveItems(closet);
+          renderCloset();
+        };
+
+        const worn = document.createElement("button");
+        worn.className = "secondary small";
+        worn.textContent = "Mark worn";
+        worn.onclick = () => {
+          it.lastWornTs = Date.now();
+          saveItems(closet);
+          model.stats.worn = (model.stats.worn||0)+1;
+          saveModel(model);
+          renderCloset();
+          renderInsights();
+        };
+
+        const del = document.createElement("button");
+        del.className = "danger small";
+        del.textContent = "Delete";
+        del.onclick = async () => {
+          if(!confirm("Delete this clothing item?")) return;
+          if(it.photoId) await deletePhoto(it.photoId);
+          closet = closet.filter(x=>x.id!==it.id);
+          saveItems(closet);
+          renderCloset();
+          renderInsights();
+        };
+
+        right.appendChild(toggleRot);
+        right.appendChild(document.createElement("div")).style.height="6px";
+        right.appendChild(worn);
+        right.appendChild(document.createElement("div")).style.height="6px";
+        right.appendChild(del);
+
+        row.appendChild(left);
+        row.appendChild(right);
+        list.appendChild(row);
+      }
+    }
+  }
+
+  $("libSearch").oninput = () => renderCloset();
+  $("libFilterCat").onchange = () => renderCloset();
+  $("libFilterRotation").onchange = () => renderCloset();
+
+  // ---------- Backup (Export/Import) ----------
+  async function blobToDataURL(blob){
+    return await new Promise((resolve, reject) => {
+      const fr = new FileReader();
+      fr.onload = () => resolve(fr.result);
+      fr.onerror = () => reject(fr.error);
+      fr.readAsDataURL(blob);
+    });
+  }
+  async function dataURLToBlob(dataUrl){
+    const r = await fetch(dataUrl);
+    return await r.blob();
+  }
+  function downloadText(filename, text){
+    const blob = new Blob([text], { type:"application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  async function exportBackup(){
+    const exportItems = [];
+    for(const it of closet){
+      const copy = { ...it };
+      if(copy.photoId){
+        const blob = await getPhotoBlob(copy.photoId);
+        if(blob) copy.photoDataUrl = await blobToDataURL(blob);
+      }
+      exportItems.push(copy);
+    }
+    const payload = {
+      version: 2,
+      exportedAt: new Date().toISOString(),
+      items: exportItems,
+      prefs,
+      theme: loadTheme() || null,
+      calendar: calCache || null,
+      outfits,
+      plans,
+      wishlist,
+      model,
+      ui: loadUI() || {}
+    };
+    downloadText("closet-backup.json", JSON.stringify(payload));
+  }
+
+  async function importBackup(text){
+    let payload;
+    try { payload = JSON.parse(text); } catch { alert("That file isn't valid JSON."); return; }
+    if(!payload?.items || !Array.isArray(payload.items)){ alert("Backup missing items."); return; }
+    if(!confirm("Import will replace your current data on this device. Continue?")) return;
+
+    // delete current photos
+    for(const it of closet){ if(it.photoId) await deletePhoto(it.photoId); }
+
+    const imported = [];
+    for(const raw of payload.items){
+      const it = { ...raw };
+
+      if(it.photoDataUrl){
+        try{
+          const blob = await dataURLToBlob(it.photoDataUrl);
+          const newPhotoId = crypto.randomUUID();
+          await putPhoto(newPhotoId, blob);
+          it.photoId = newPhotoId;
+        } catch { it.photoId = null; }
+        delete it.photoDataUrl;
+      }
+
+      it.id = it.id || crypto.randomUUID();
+      if(typeof it.inRotation !== "boolean") it.inRotation = (it.inRotation !== false); // normalize
+      imported.push(it);
+    }
+
+    closet = imported;
+    saveItems(closet);
+
+    prefs = payload.prefs || {};
+    savePrefs(prefs);
+
+    calCache = payload.calendar || null;
+    if(calCache) saveCal(calCache); else localStorage.removeItem(CAL_KEY);
+
+    outfits = Array.isArray(payload.outfits) ? payload.outfits : [];
+    saveOutfits(outfits);
+
+    plans = payload.plans || {};
+    savePlans(plans);
+
+    wishlist = Array.isArray(payload.wishlist) ? payload.wishlist : [];
+    saveWish(wishlist);
+
+    model = payload.model || { likes:{}, dislikes:{}, stats:{} };
+    saveModel(model);
+
+    if(payload.theme?.accent || payload.theme?.background){
+      setTheme(payload.theme.accent || "#111111", payload.theme.background || "#f6f6f7");
+    }
+
+    if(payload.ui){
+      saveUI(payload.ui);
+    }
+
+    // refresh UI
+    ["styleVibe","prefFormality","prefColor","avoid"].forEach(k=>{
+      if(prefs[k] != null && $(k)) $(k).value = prefs[k];
+    });
+
+    renderCloset();
+    renderAgenda();
+    renderPlanner();
+    renderHistory();
+    renderInsights();
+    renderShop();
+    alert("Import complete.");
+  }
+
+  // ---------- Today context ----------
+  function getContext(){
+    prefs.styleVibe = $("styleVibe").value;
+    prefs.prefFormality = $("prefFormality").value;
+    prefs.prefColor = $("prefColor").value;
+    prefs.avoid = $("avoid").value;
+    savePrefs(prefs);
+
+    const tempF = Number($("manualTemp").value);
+    const rainChance = Number($("manualRain").value || 0);
+    if(!Number.isFinite(tempF)) throw new Error("Please set a temperature (weather).");
+
+    const warmthTarget = deriveWarmthTarget(tempF);
+    const rainLikely = (rainChance >= 40);
+
+    let occ = $("occasion").value;
+    const notes = `${$("dayNotes").value || ""} ${$("weatherNote").value || ""}`.trim();
+
+    if(occ === "auto"){
+      const dateStr = $("agendaDate").value;
+      const todaysEvents = eventsForDate(dateStr);
+      occ = inferOccasionFromEvents(todaysEvents, notes);
+    }
+
+    const formalityTarget = desiredFormality(occ);
+    const colorPref = prefs.prefColor || "any";
+    const avoidText = prefs.avoid || "";
+
+    return {
+      dateStr: $("agendaDate").value || ymd(new Date()),
+      tempF, rainChance, warmthTarget, rainLikely,
+      occasion: occ, formalityTarget, colorPref, avoidText,
+      notes
+    };
+  }
+
+  // ---------- Generate outfit buttons ----------
+  async function generateAndRender(n){
+    if(closet.length === 0){
+      alert("Your closet is empty. Go to Library and add items first.");
+      showPage("library");
+      return;
+    }
+    const ctx = getContext();
+    // increment stat
+    model.stats.generated = (model.stats.generated||0) + 1;
+    saveModel(model);
+
+    const picks = [];
+    for(let i=0;i<n;i++){
+      picks.push(generateOne(ctx));
+    }
+    await renderOutfits(picks, ctx);
+
+    // create a history record for option 1 (so planning can reference it)
+    // (it isn't "saved" until user taps ❤️)
+    const record = makeOutfitRecord(picks[0], ctx, { saved:false, planned:false });
+    outfits.unshift(record);
+    saveOutfits(outfits);
+    window.__lastGeneratedOutfitRecordId = record.id;
+
+    renderInsights();
+    renderShop();
+  }
+
+  $("gen").onclick = async () => { try{ await generateAndRender(1); } catch(e){ alert(e.message||"Could not generate outfit."); } };
+  $("gen3").onclick = async () => { try{ await generateAndRender(3); } catch(e){ alert(e.message||"Could not generate outfits."); } };
+
+  // ---------- Library add item ----------
+  function getMultiSelectValues(sel){
+    const out = [];
+    for(const opt of sel.options){
+      if(opt.selected) out.push(opt.value);
+    }
+    return out;
+  }
+
+  $("add").onclick = async () => {
+    const name = ($("name").value || "").trim();
+    if(!name) return alert("Please enter a name.");
+
+    const it = {
+      id: crypto.randomUUID(),
+      cat: $("cat").value,
+      name,
+      warmth: $("warmth").value,
+      formality: $("formality").value,
+      color: $("color").value,
+      rainOk: $("rainOk").value,
+      brand: ($("brand").value || "").trim(),
+      price: ($("price").value || "").trim(),
+      seasons: getMultiSelectValues($("seasons")),
+      inRotation: ($("inRotation").value === "yes"),
+      notes: ($("notes").value || "").trim(),
+      lastWornTs: null,
+      photoId: null
+    };
+
+    const file = $("photo").files?.[0];
+    if(file){
+      try{
+        const blob = await processPhoto(file);
+        const photoId = crypto.randomUUID();
+        await putPhoto(photoId, blob);
+        it.photoId = photoId;
+      } catch {
+        alert("Photo couldn't be saved. Item will be saved without photo.");
+      }
+      $("photo").value = "";
+    }
+
+    closet.push(it);
+    saveItems(closet);
+
+    $("name").value = "";
+    $("notes").value = "";
+    $("brand").value = "";
+    $("price").value = "";
+    $("inRotation").value = "yes";
+    // clear seasons selections
+    [...$("seasons").options].forEach(o=>o.selected=false);
+
+    await renderCloset();
+    renderInsights();
+    alert("Added!");
+  };
+
+  $("wipe").onclick = async () => {
+    if(!confirm("Delete all closet items (and photos)?")) return;
+    for(const it of closet){ if(it.photoId) await deletePhoto(it.photoId); }
+    closet = [];
+    saveItems(closet);
+    renderCloset();
+    renderInsights();
+  };
+
+  $("seed").onclick = async () => {
+    if(closet.length && !confirm("Add starter items to your existing closet?")) return;
+    const starter = [
+      {cat:"top", name:"Plain white tee", warmth:"light", formality:"casual", color:"neutral", rainOk:"no", notes:"easy base layer", brand:"", price:"", seasons:["spring","summer"], inRotation:true},
+      {cat:"top", name:"Oxford shirt", warmth:"mid", formality:"smart", color:"neutral", rainOk:"no", notes:"work-ready", brand:"", price:"", seasons:["spring","fall"], inRotation:true},
+      {cat:"top", name:"Sweater", warmth:"warm", formality:"smart", color:"dark", rainOk:"no", notes:"layering", brand:"", price:"", seasons:["fall","winter"], inRotation:true},
+      {cat:"bottom", name:"Dark jeans", warmth:"mid", formality:"casual", color:"dark", rainOk:"no", notes:"goes with everything", brand:"", price:"", seasons:["fall","winter","spring"], inRotation:true},
+      {cat:"bottom", name:"Chinos", warmth:"mid", formality:"smart", color:"earth", rainOk:"no", notes:"work + weekend", brand:"", price:"", seasons:["spring","fall"], inRotation:true},
+      {cat:"shoes", name:"Clean sneakers", warmth:"mid", formality:"casual", color:"neutral", rainOk:"no", notes:"street/minimal", brand:"", price:"", seasons:["spring","summer","fall"], inRotation:true},
+      {cat:"shoes", name:"Loafers or derbies", warmth:"mid", formality:"smart", color:"dark", rainOk:"no", notes:"work shoes", brand:"", price:"", seasons:["spring","fall"], inRotation:true},
+      {cat:"outerwear", name:"Light jacket", warmth:"mid", formality:"casual", color:"neutral", rainOk:"no", notes:"evenings", brand:"", price:"", seasons:["spring","fall"], inRotation:true},
+      {cat:"outerwear", name:"Rain shell", warmth:"mid", formality:"casual", color:"dark", rainOk:"yes", notes:"packs small", brand:"", price:"", seasons:["spring","fall","winter"], inRotation:true},
+      {cat:"accessory", name:"Belt", warmth:"mid", formality:"smart", color:"dark", rainOk:"yes", notes:"simple", brand:"", price:"", seasons:["spring","summer","fall","winter"], inRotation:true}
+    ].map(x => ({...x, id: crypto.randomUUID(), lastWornTs:null, photoId:null}));
+
+    closet = closet.concat(starter);
+    saveItems(closet);
+    renderCloset();
+    renderInsights();
+  };
+
+  // Backup buttons
+  $("exportCloset").onclick = async () => {
+    try{ await exportBackup(); }
+    catch { alert("Export failed."); }
+  };
+  $("importClosetBtn").onclick = () => $("importClosetFile").click();
+  $("importClosetFile").onchange = async () => {
+    const f = $("importClosetFile").files?.[0];
+    if(!f) return;
+    try{
+      const txt = await readFileAsText(f);
+      await importBackup(txt);
+    } catch {
+      alert("Import failed.");
+    } finally {
+      $("importClosetFile").value = "";
+    }
+  };
+
+  // ---------- Today date defaults ----------
+  const today = new Date();
+  $("agendaDate").value = ymd(today);
+  $("planMonth").value = today.toISOString().slice(0,7);
+
+  // ---------- Planner/History page buttons ----------
+  $("planMonth").onchange = () => renderPlanner();
+
+  // ---------- Initialize ----------
+  applyTheme(loadTheme() || { accent:"#111111", background:"#f6f6f7" });
+  buildSwatches();
+
+  // settings modal open/close
+  function openSettings(){ $("settingsBackdrop").classList.add("show"); $("settingsBackdrop").setAttribute("aria-hidden","false"); }
+  function closeSettings(){ $("settingsBackdrop").classList.remove("show"); $("settingsBackdrop").setAttribute("aria-hidden","true"); }
+  // already wired above; keep
+  // (we re-use IDs; the earlier openSettings is fine)
+
+  // initial renders
+  renderCloset();
+  renderAgenda();
+  renderPlanner();
+  renderHistory();
+  renderInsights();
+  renderShop();
+  renderWishlist();
+
+  // auto weather if user allowed previously
+  tryAutoWeatherOnLoad();
+
+  // default page
+  showPage("today");
+
+})();
+</script>
+</body>
+</html>
